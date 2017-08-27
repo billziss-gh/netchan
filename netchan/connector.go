@@ -166,3 +166,7 @@ func (self *connector) sender(link Link) error {
 }
 
 var DefaultConnector Connector = newConnector(DefaultTransport)
+
+func Connect(uri *url.URL, ichan interface{}, echan chan error) error {
+	return DefaultConnector.Connect(uri, ichan, echan)
+}

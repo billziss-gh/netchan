@@ -153,3 +153,11 @@ func (self *publisher) recver(link Link) error {
 }
 
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)
+
+func Publish(id string, ichan interface{}, echan chan error) error {
+	return DefaultPublisher.Publish(id, ichan, echan)
+}
+
+func Unpublish(id string, ichan interface{}) {
+	DefaultPublisher.Unpublish(id, ichan)
+}
