@@ -13,28 +13,44 @@
 package netchan
 
 import (
+	"net/url"
 	"testing"
 )
 
-func TestPublisher(t *testing.T) {
+func testPublisher(t *testing.T, publisher Publisher) {
 	ichan := make(chan bool)
 	echan := make(chan error)
 
-	err := DefaultPublisher.Publish("one", ichan, echan)
+	err := publisher.Publish("one", ichan, echan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = DefaultPublisher.Publish("one", ichan, echan)
+	err = publisher.Publish("one", ichan, echan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = DefaultPublisher.Publish("two", ichan, echan)
+	err = publisher.Publish("two", ichan, echan)
 	if nil != err {
 		panic(err)
 	}
 
-	DefaultPublisher.Unpublish("one", ichan)
-	DefaultPublisher.Unpublish("two", ichan)
+	publisher.Unpublish("one", ichan)
+	publisher.Unpublish("two", ichan)
+}
+
+func TestPublisher(t *testing.T) {
+	marshaler := newGobMarshaler()
+	transport := newNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	publisher := newPublisher(transport)
+	newConnector(transport)
+	defer transport.Close()
+
+	testPublisher(t, publisher)
 }

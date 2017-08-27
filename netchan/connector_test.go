@@ -18,11 +18,11 @@ import (
 	"time"
 )
 
-func TestConnector(t *testing.T) {
+func testConnector(t *testing.T, connector Connector) {
 	ichan := make(chan bool)
 	echan := make(chan error)
 
-	err := DefaultConnector.Connect(
+	err := connector.Connect(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -37,4 +37,19 @@ func TestConnector(t *testing.T) {
 	close(ichan)
 
 	time.Sleep(300 * time.Millisecond)
+}
+
+func TestConnector(t *testing.T) {
+	marshaler := newGobMarshaler()
+	transport := newNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	newPublisher(transport)
+	connector := newConnector(transport)
+	defer transport.Close()
+
+	testConnector(t, connector)
 }

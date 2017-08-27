@@ -109,8 +109,6 @@ func testTransport(t *testing.T, transport Transport) {
 	link.Open()
 
 	<-trs.done
-
-	transport.Close()
 }
 
 func TestNetTransport(t *testing.T) {
@@ -121,6 +119,9 @@ func TestNetTransport(t *testing.T) {
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
+	defer transport.Close()
 
 	testTransport(t, transport)
+
+	transport.Close()
 }
