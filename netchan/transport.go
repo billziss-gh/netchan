@@ -34,6 +34,7 @@ func readMsg(r io.Reader) ([]byte, error) {
 	if nil != err {
 		return nil, new(ErrTransport).nested(err)
 	}
+
 	msg[0] = buf[0]
 	msg[1] = buf[1]
 	msg[2] = buf[2]
