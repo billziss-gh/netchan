@@ -35,8 +35,6 @@ func testConnector(t *testing.T, connector Connector) {
 	}
 
 	close(ichan)
-
-	time.Sleep(300 * time.Millisecond)
 }
 
 func TestConnector(t *testing.T) {
@@ -49,7 +47,11 @@ func TestConnector(t *testing.T) {
 		})
 	newPublisher(transport)
 	connector := newConnector(transport)
-	defer transport.Close()
+	defer func() {
+		time.Sleep(100 * time.Millisecond)
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	testConnector(t, connector)
 }

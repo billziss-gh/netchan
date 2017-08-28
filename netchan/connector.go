@@ -69,7 +69,7 @@ func (self *connector) Connect(uri *url.URL, ichan interface{}, echan chan error
 			info.slist = append(info.slist,
 				reflect.SelectCase{
 					Dir:  reflect.SelectRecv,
-					Chan: reflect.ValueOf(make(chan struct{}, 1)),
+					Chan: reflect.ValueOf(make(chan struct{}, 0x7fffffff)),
 				})
 			info.ilist = append(info.ilist, "")
 			info.elist = append(info.elist, nil)

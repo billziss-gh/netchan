@@ -15,6 +15,7 @@ package netchan
 import (
 	"net/url"
 	"testing"
+	"time"
 )
 
 func testPublisher(t *testing.T, publisher Publisher) {
@@ -50,7 +51,11 @@ func TestPublisher(t *testing.T) {
 		})
 	publisher := newPublisher(transport)
 	newConnector(transport)
-	defer transport.Close()
+	defer func() {
+		time.Sleep(100 * time.Millisecond)
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	testPublisher(t, publisher)
 }

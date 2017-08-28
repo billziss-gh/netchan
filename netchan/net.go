@@ -213,9 +213,9 @@ func (self *netMultiLink) close() {
 }
 
 func (self *netMultiLink) accept(conn net.Conn) *netLink {
-	index := int(atomic.AddUint32(&self.index, +1) % uint32(len(self.link)))
+	index := int(atomic.AddUint32(&self.index, +1))
 	for i := range self.link {
-		link := self.link[i+index].accept(conn)
+		link := self.link[(i+index)%len(self.link)].accept(conn)
 		if nil != link {
 			return link
 		}
@@ -224,8 +224,8 @@ func (self *netMultiLink) accept(conn net.Conn) *netLink {
 }
 
 func (self *netMultiLink) choose() *netLink {
-	index := int(atomic.AddUint32(&self.index, +1) % uint32(len(self.link)))
-	return self.link[index]
+	index := int(atomic.AddUint32(&self.index, +1))
+	return self.link[index%len(self.link)]
 }
 
 type netTransport struct {
@@ -335,7 +335,7 @@ func (self *netTransport) accepter() {
 		}
 
 		link := mlink.accept(conn)
-		if nil != err {
+		if nil == link {
 			conn.Close()
 			continue
 		}
