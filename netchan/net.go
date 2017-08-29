@@ -325,6 +325,24 @@ func (self *netTransport) accepter() {
 			continue
 		}
 
+		/* Localhost loop fix
+		 *
+		 * The localhost loop happens when the channel receiver and sender
+		 * are both on the localhost. It is possible for the transport to
+		 * pick the same link (and the same socket/net.Conn) for both the
+		 * receiver and the sender side. This of course does not work as
+		 * one cannot use the same socket to communicate with itself.
+		 *
+		 * Here is the hackfix: upon seeing that the remote is 127.0.0.1
+		 * (localhost), we force the address to 127.0.0.127 (another address
+		 * for localhost). Since links are keyed by uri/address we ensure
+		 * that a different link (and hence different socket) will be picked
+		 * up, thus using a pair of sockets for communication.
+		 */
+		if "127.0.0.1" == host {
+			host = "127.0.0.127"
+		}
+
 		mlink, err := self.connect(&url.URL{
 			Scheme: conn.RemoteAddr().Network(),
 			Host:   host,
