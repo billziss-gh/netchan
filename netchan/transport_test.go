@@ -122,6 +122,4 @@ func TestNetTransport(t *testing.T) {
 	defer transport.Close()
 
 	testTransport(t, transport)
-
-	transport.Close()
 }
