@@ -13,6 +13,7 @@
 package netchan
 
 import (
+	"crypto/tls"
 	"net"
 	"net/url"
 	"reflect"
@@ -93,7 +94,13 @@ func (self *netLink) connect() (net.Conn, error) {
 	}
 
 	if nil == self.conn {
-		conn, err := net.Dial(self.owner.uri.Scheme, self.owner.uri.Host)
+		var conn net.Conn
+		var err error
+		if nil == self.owner.transport.tlscfg {
+			conn, err = net.Dial("tcp", self.owner.uri.Host)
+		} else {
+			conn, err = tls.Dial("tcp", self.owner.uri.Host, self.owner.transport.tlscfg)
+		}
 		if nil != err {
 			return nil, new(ErrTransport).nested(err)
 		}
@@ -231,6 +238,7 @@ func (self *netMultiLink) choose() *netLink {
 type netTransport struct {
 	marshaler Marshaler
 	uri       *url.URL
+	tlscfg    *tls.Config
 	recver    func(link Link) error
 	sender    func(link Link) error
 	mux       sync.Mutex
@@ -240,9 +248,18 @@ type netTransport struct {
 }
 
 func newNetTransport(marshaler Marshaler, uri *url.URL) *netTransport {
+	return newNetTransportTLS(marshaler, uri, nil)
+}
+
+func newNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) *netTransport {
+	if nil != tlscfg {
+		tlscfg = tlscfg.Clone()
+	}
+
 	return &netTransport{
 		marshaler: marshaler,
 		uri:       uri,
+		tlscfg:    tlscfg,
 		mlink:     make(map[string]*netMultiLink),
 	}
 }
@@ -256,7 +273,9 @@ func (self *netTransport) SetSender(sender func(link Link) error) {
 }
 
 func (self *netTransport) Listen() error {
-	if "tcp" != self.uri.Scheme || "" == self.uri.Port() {
+	if (nil == self.tlscfg && "tcp" != self.uri.Scheme) ||
+		(nil != self.tlscfg && "tls" != self.uri.Scheme) ||
+		"" == self.uri.Port() {
 		return ErrTransportInvalid
 	}
 
@@ -267,7 +286,13 @@ func (self *netTransport) Listen() error {
 	}
 
 	if nil == self.listen {
-		listen, err := net.Listen(self.uri.Scheme, self.uri.Host)
+		var listen net.Listener
+		var err error
+		if nil == self.tlscfg {
+			listen, err = net.Listen("tcp", self.uri.Host)
+		} else {
+			listen, err = tls.Listen("tcp", self.uri.Host, self.tlscfg)
+		}
 		if nil != err {
 			return new(ErrTransport).nested(err)
 		}
@@ -280,7 +305,8 @@ func (self *netTransport) Listen() error {
 }
 
 func (self *netTransport) Connect(uri *url.URL) (string, Link, error) {
-	if "tcp" != uri.Scheme {
+	if (nil == self.tlscfg && "tcp" != self.uri.Scheme) ||
+		(nil != self.tlscfg && "tls" != self.uri.Scheme) {
 		return "", nil, ErrTransportInvalid
 	}
 
