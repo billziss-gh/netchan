@@ -433,4 +433,9 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 	return mlink, nil
 }
 
-var _ Transport = (*netTransport)(nil)
+var _ Transport = RegisterTransport("tcp", newNetTransport(
+	DefaultMarshaler,
+	&url.URL{
+		Scheme: "tcp",
+		Host:   ":25454",
+	}))

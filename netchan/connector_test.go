@@ -55,3 +55,8 @@ func TestConnector(t *testing.T) {
 
 	testConnector(t, connector)
 }
+
+func TestDefaultConnector(t *testing.T) {
+	testConnector(t, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
+}

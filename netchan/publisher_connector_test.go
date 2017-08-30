@@ -73,6 +73,11 @@ func TestPublisherConnector(t *testing.T) {
 	testPublisherConnector(t, publisher, connector)
 }
 
+func TestDefaultPublisherConnector(t *testing.T) {
+	testPublisherConnector(t, DefaultPublisher, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
+}
+
 func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
@@ -139,7 +144,12 @@ func TestPublisherConnectorMulti(t *testing.T) {
 	testPublisherConnectorMulti(t, publisher, connector)
 }
 
-func testPublisherConnectorMultiConcurrrent(t *testing.T, publisher Publisher, connector Connector) {
+func TestDefaultPublisherConnectorMulti(t *testing.T) {
+	testPublisherConnectorMulti(t, DefaultPublisher, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
+}
+
+func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -203,7 +213,7 @@ func testPublisherConnectorMultiConcurrrent(t *testing.T, publisher Publisher, c
 	}
 }
 
-func TestPublisherConnectorMultiConcurrrent(t *testing.T) {
+func TestPublisherConnectorMultiConcurrent(t *testing.T) {
 	marshaler := newGobMarshaler()
 	transport := newNetTransport(
 		marshaler,
@@ -219,5 +229,10 @@ func TestPublisherConnectorMultiConcurrrent(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorMultiConcurrrent(t, publisher, connector)
+	testPublisherConnectorMultiConcurrent(t, publisher, connector)
+}
+
+func TestDefaultPublisherConnectorMultiConcurrent(t *testing.T) {
+	testPublisherConnectorMultiConcurrent(t, DefaultPublisher, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
 }

@@ -15,6 +15,7 @@ package netchan
 import (
 	"io"
 	"net/url"
+	"sync"
 )
 
 func readMsg(r io.Reader) ([]byte, error) {
@@ -62,9 +63,113 @@ func writeMsg(w io.Writer, msg []byte) error {
 	return nil
 }
 
-var DefaultTransport Transport = newNetTransport(
-	DefaultMarshaler,
-	&url.URL{
-		Scheme: "tcp",
-		Host:   ":25454",
+type defaultTransport struct {
+	recver    func(link Link) error
+	sender    func(link Link) error
+	lmux      sync.Mutex
+	listening bool
+	tonce     sync.Once
+	tmux      sync.RWMutex
+	transport map[string]Transport
+}
+
+func newDefaultTransport() *defaultTransport {
+	return &defaultTransport{
+		transport: make(map[string]Transport),
+	}
+}
+
+func (self *defaultTransport) SetRecver(recver func(link Link) error) {
+	self.recver = recver
+}
+
+func (self *defaultTransport) SetSender(sender func(link Link) error) {
+	self.sender = sender
+}
+
+func (self *defaultTransport) Listen() (err error) {
+	/*
+	 * Listen succeeds if any underlying transport is able to listen.
+	 * If all transports fail to listen, Listen returns the error
+	 * from the "tcp" transport.
+	 */
+
+	self.lmux.Lock()
+	defer self.lmux.Unlock()
+
+	if !self.listening {
+		self.tmux.RLock()
+		defer self.tmux.RUnlock()
+
+		self.transportSetRecverSender()
+		for scheme, transport := range self.transport {
+			err0 := transport.Listen()
+			if nil == err0 {
+				self.listening = true
+			} else {
+				if "tcp" == scheme {
+					err = err0
+				}
+			}
+		}
+
+		if self.listening {
+			err = nil
+		}
+	}
+
+	return
+}
+
+func (self *defaultTransport) Connect(uri *url.URL) (string, Link, error) {
+	self.tmux.RLock()
+	defer self.tmux.RUnlock()
+
+	transport, ok := self.transport[uri.Scheme]
+	if !ok {
+		return "", nil, ErrTransportInvalid
+	}
+
+	self.transportSetRecverSender()
+	return transport.Connect(uri)
+}
+
+func (self *defaultTransport) Close() {
+	/*
+	 * Close is ignored on the defaultTransport.
+	 */
+}
+
+func (self *defaultTransport) transportSetRecverSender() {
+	self.tonce.Do(func() {
+		for _, transport := range self.transport {
+			transport.SetRecver(self.recver)
+			transport.SetSender(self.sender)
+		}
 	})
+}
+
+func (self *defaultTransport) registerTransport(scheme string, transport Transport) Transport {
+	self.tmux.Lock()
+	defer self.tmux.Unlock()
+
+	self.transport[scheme] = transport
+	return transport
+}
+
+func (self *defaultTransport) unregisterTransport(scheme string) {
+	self.tmux.Lock()
+	defer self.tmux.Unlock()
+
+	delete(self.transport, scheme)
+}
+
+var DefaultTransport Transport = newDefaultTransport()
+
+func RegisterTransport(scheme string, transport Transport) Transport {
+	return DefaultTransport.(*defaultTransport).registerTransport(scheme, transport)
+}
+
+func UnregisterTransport(scheme string) {
+	DefaultTransport.(*defaultTransport).unregisterTransport(scheme)
+}

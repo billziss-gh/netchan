@@ -59,3 +59,8 @@ func TestPublisher(t *testing.T) {
 
 	testPublisher(t, publisher)
 }
+
+func TestDefaultPublisher(t *testing.T) {
+	testPublisher(t, DefaultPublisher)
+	time.Sleep(100 * time.Millisecond)
+}
