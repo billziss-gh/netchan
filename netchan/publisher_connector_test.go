@@ -177,6 +177,102 @@ func TestDefaultPublisherConnectorAnyAll(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 }
 
+func testPublisherConnectorError(t *testing.T,
+	transport Transport, publisher Publisher, connector Connector) {
+	pchan := make(chan string)
+	cchan := make(chan string)
+	echan0 := make(chan error)
+	echan1 := make(chan error)
+	echan2 := make(chan error)
+
+	err := publisher.Publish("one", pchan)
+	if nil != err {
+		panic(err)
+	}
+
+	err = publisher.Publish(IdErr, echan0)
+	if nil != err {
+		panic(err)
+	}
+
+	err = publisher.Publish(IdErr, echan1)
+	if nil != err {
+		panic(err)
+	}
+
+	err = publisher.Publish(IdErr, echan2)
+	if nil != err {
+		panic(err)
+	}
+
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.1",
+			Path:   IdErr,
+		},
+		cchan,
+		nil)
+	if ErrArgumentInvalid != err {
+		t.Error()
+	}
+
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.1",
+			Path:   "one",
+		},
+		cchan,
+		nil)
+	if nil != err {
+		panic(err)
+	}
+
+	cchan <- "fortytwo"
+
+	close(cchan)
+
+	s := <-pchan
+	if "fortytwo" != s {
+		t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
+	}
+
+	publisher.Unpublish("one", pchan)
+
+	time.Sleep(100 * time.Millisecond)
+	transport.Close()
+	time.Sleep(100 * time.Millisecond)
+
+	sum := 0
+	for 7 != sum {
+		select {
+		case <-echan0:
+			sum |= 1
+		case <-echan1:
+			sum |= 2
+		case <-echan2:
+			sum |= 4
+		}
+	}
+}
+
+func TestPublisherConnectorError(t *testing.T) {
+	marshaler := newGobMarshaler()
+	transport := newNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	publisher := newPublisher(transport)
+	connector := newConnector(transport)
+	defer func() {
+	}()
+
+	testPublisherConnectorError(t, transport, publisher, connector)
+}
+
 func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)

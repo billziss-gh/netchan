@@ -51,7 +51,7 @@ func (self *publisher) Publish(id string, ichan interface{}) error {
 			return err
 		}
 	} else {
-		if errType != vchan.Type() {
+		if errType != vchan.Type().Elem() {
 			panic(ErrArgumentInvalid)
 		}
 	}
@@ -142,9 +142,9 @@ func (self *publisher) recver(link Link) error {
 }
 
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)
-var IdErr = strBroadcast + "/err"
+var IdErr = strBroadcast + "err/"
 var strBroadcast = "+"
-var errType = reflect.TypeOf(ErrArgumentInvalid)
+var errType = reflect.TypeOf((*error)(nil)).Elem()
 
 func Publish(id string, ichan interface{}) error {
 	return DefaultPublisher.Publish(id, ichan)
