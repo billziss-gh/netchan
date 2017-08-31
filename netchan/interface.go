@@ -29,7 +29,7 @@ type Publisher interface {
 }
 
 type Connector interface {
-	Connect(uri *url.URL, ichan interface{}, echan chan error) error
+	Connect(uri interface{}, ichan interface{}, echan chan error) error
 }
 
 type Link interface {

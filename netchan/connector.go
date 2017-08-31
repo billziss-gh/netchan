@@ -39,9 +39,23 @@ func newConnector(transport Transport) *connector {
 	return self
 }
 
-func (self *connector) Connect(uri *url.URL, ichan interface{}, echan chan error) error {
+func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan error) error {
 	vchan := reflect.ValueOf(ichan)
 	if reflect.Chan != vchan.Kind() || 0 == vchan.Type().ChanDir()&reflect.SendDir {
+		panic(ErrArgumentInvalid)
+	}
+
+	var uri *url.URL
+	var err error
+	switch u := iuri.(type) {
+	case string:
+		uri, err = url.Parse(u)
+		if nil != err {
+			return newErrTransport(err)
+		}
+	case *url.URL:
+		uri = u
+	default:
 		panic(ErrArgumentInvalid)
 	}
 
