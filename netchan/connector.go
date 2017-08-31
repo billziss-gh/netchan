@@ -130,25 +130,16 @@ outer:
 
 			err := link.Send(ilist[i], vmsg)
 			if nil != err {
-				errmap := make(map[chan error]int)
-				for _, echan := range elist {
-					if nil != echan {
-						errmap[echan]++
-					}
-				}
-
-				for echan := range errmap {
+				if nil != elist[i] {
 					func() {
 						defer recover()
-						echan <- err
+						elist[i] <- err
 					}()
 				}
 
-				if _, ok := err.(*ErrTransport); !ok {
-					continue
+				if _, ok := err.(*ErrTransport); ok {
+					return err
 				}
-
-				return err
 			}
 		}
 	}

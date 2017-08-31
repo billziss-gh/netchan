@@ -20,19 +20,18 @@ import (
 
 func testPublisher(t *testing.T, publisher Publisher) {
 	ichan := make(chan bool)
-	echan := make(chan error)
 
-	err := publisher.Publish("one", ichan, echan)
+	err := publisher.Publish("one", ichan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish("one", ichan, echan)
+	err = publisher.Publish("one", ichan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish("two", ichan, echan)
+	err = publisher.Publish("two", ichan)
 	if nil != err {
 		panic(err)
 	}

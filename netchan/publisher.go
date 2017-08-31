@@ -21,7 +21,6 @@ import (
 
 type pubinfo struct {
 	vlist []reflect.Value
-	elist []chan error
 }
 
 type publisher struct {
@@ -39,7 +38,7 @@ func newPublisher(transport Transport) *publisher {
 	return self
 }
 
-func (self *publisher) Publish(id string, ichan interface{}, echan chan error) error {
+func (self *publisher) Publish(id string, ichan interface{}) error {
 	vchan := reflect.ValueOf(ichan)
 	if reflect.Chan != vchan.Kind() || 0 == vchan.Type().ChanDir()&reflect.SendDir {
 		panic(ErrArgumentInvalid)
@@ -64,7 +63,6 @@ func (self *publisher) Publish(id string, ichan interface{}, echan chan error) e
 
 	if !found {
 		info.vlist = append(info.vlist, vchan)
-		info.elist = append(info.elist, echan)
 		self.pubmap[id] = info
 	}
 
@@ -84,7 +82,6 @@ func (self *publisher) Unpublish(id string, ichan interface{}) {
 	for i, v := range info.vlist {
 		if v == vchan {
 			info.vlist = append(info.vlist[:i], info.vlist[i+1:]...)
-			info.elist = append(info.elist[:i], info.elist[i+1:]...)
 
 			if 0 == len(info.vlist) {
 				delete(self.pubmap, id)
@@ -103,30 +100,9 @@ func (self *publisher) recver(link Link) error {
 	for {
 		id, vmsg, err := link.Recv()
 		if nil != err {
-			// make a copy so that we can safely use it outside the read lock
-			self.pubmux.RLock()
-			errmap := make(map[chan error]int)
-			for _, info := range self.pubmap {
-				for _, echan := range info.elist {
-					if nil != echan {
-						errmap[echan]++
-					}
-				}
+			if _, ok := err.(*ErrTransport); ok {
+				return err
 			}
-			self.pubmux.RUnlock()
-
-			for echan := range errmap {
-				func() {
-					defer recover()
-					echan <- err
-				}()
-			}
-
-			if _, ok := err.(*ErrTransport); !ok {
-				continue
-			}
-
-			return err
 		} else {
 			// make a copy so that we can safely use it outside the read lock
 			self.pubmux.RLock()
@@ -155,8 +131,8 @@ func (self *publisher) recver(link Link) error {
 
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)
 
-func Publish(id string, ichan interface{}, echan chan error) error {
-	return DefaultPublisher.Publish(id, ichan, echan)
+func Publish(id string, ichan interface{}) error {
+	return DefaultPublisher.Publish(id, ichan)
 }
 
 func Unpublish(id string, ichan interface{}) {

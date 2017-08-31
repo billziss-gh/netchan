@@ -18,7 +18,7 @@ import (
 )
 
 type Publisher interface {
-	Publish(id string, ichan interface{}, echan chan error) error
+	Publish(id string, ichan interface{}) error
 	Unpublish(id string, ichan interface{})
 }
 

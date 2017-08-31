@@ -25,7 +25,7 @@ func testPublisherConnector(t *testing.T, publisher Publisher, connector Connect
 	cchan := make(chan string)
 	echan := make(chan error)
 
-	err := publisher.Publish("one", pchan, echan)
+	err := publisher.Publish("one", pchan)
 	if nil != err {
 		panic(err)
 	}
@@ -86,7 +86,7 @@ func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Co
 	for i := range pchan {
 		pchan[i] = make(chan string)
 
-		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i], echan)
+		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
@@ -157,7 +157,7 @@ func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, co
 	for i := range pchan {
 		pchan[i] = make(chan string)
 
-		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i], echan)
+		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
