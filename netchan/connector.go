@@ -131,6 +131,10 @@ outer:
 			err := link.Send(ilist[i], vmsg)
 			if nil != err {
 				if nil != elist[i] {
+					if e, ok := err.(errArgs); ok {
+						e.args(slist[i].Chan.Interface())
+					}
+
 					func() {
 						defer recover()
 						elist[i] <- err

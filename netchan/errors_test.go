@@ -17,11 +17,15 @@ import (
 )
 
 func TestErr(t *testing.T) {
+	_ = newErrArgument().(Err)
+	_ = newErrTransport().(Err)
+	_ = newErrMarshaler().(Err)
+
 	_ = newErrArgument().(*ErrArgument)
 	_ = newErrTransport().(*ErrTransport)
 	_ = newErrMarshaler().(*ErrMarshaler)
 
-	msg0 := ErrArgumentInvalid.(*ErrArgument).Message
+	msg0 := ErrArgumentInvalid.(*ErrArgument).message
 	if "argument is invalid" != msg0 {
 		t.Errorf("incorrect error message: expect %v, got %v", "argument is invalid", msg0)
 	}

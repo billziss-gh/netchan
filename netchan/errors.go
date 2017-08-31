@@ -12,56 +12,75 @@
 
 package netchan
 
-type Err struct {
-	Message string
-	Nested  error
+type errArgs interface {
+	args(args ...interface{})
 }
 
-func (err *Err) args(args []interface{}) {
+type errData struct {
+	message string
+	nested  error
+	ichan   interface{}
+}
+
+func (err *errData) _args(args []interface{}) {
 	for _, arg := range args {
 		switch a := arg.(type) {
 		case string:
-			err.Message = a
+			err.message = a
 		case error:
-			err.Nested = a
+			err.nested = a
+		default:
+			err.ichan = a
 		}
 	}
 }
 
-func (err *Err) Error() string {
-	if "" == err.Message && nil != err.Nested {
-		return err.Nested.Error()
+func (err *errData) args(args ...interface{}) {
+	err._args(args)
+}
+
+func (err *errData) Error() string {
+	if "" == err.message && nil != err.nested {
+		return err.nested.Error()
 	}
-	return err.Message
+	return err.message
+}
+
+func (err *errData) Nested() error {
+	return err.nested
+}
+
+func (err *errData) Chan() interface{} {
+	return err.ichan
 }
 
 type ErrArgument struct {
-	Err
+	errData
 }
 
 func newErrArgument(args ...interface{}) error {
 	err := &ErrArgument{}
-	err.args(args)
+	err._args(args)
 	return err
 }
 
 type ErrTransport struct {
-	Err
+	errData
 }
 
 func newErrTransport(args ...interface{}) error {
 	err := &ErrTransport{}
-	err.args(args)
+	err._args(args)
 	return err
 }
 
 type ErrMarshaler struct {
-	Err
+	errData
 }
 
 func newErrMarshaler(args ...interface{}) error {
 	err := &ErrMarshaler{}
-	err.args(args)
+	err._args(args)
 	return err
 }
 

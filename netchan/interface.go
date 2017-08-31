@@ -17,6 +17,12 @@ import (
 	"reflect"
 )
 
+type Err interface {
+	error
+	Nested() error
+	Chan() interface{}
+}
+
 type Publisher interface {
 	Publish(id string, ichan interface{}) error
 	Unpublish(id string, ichan interface{})
