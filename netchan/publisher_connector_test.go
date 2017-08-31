@@ -78,6 +78,105 @@ func TestDefaultPublisherConnector(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 }
 
+func testPublisherConnectorAnyAll(t *testing.T, publisher Publisher, connector Connector,
+	anyall string) {
+	pchan0 := make(chan string)
+	pchan1 := make(chan string)
+	pchan2 := make(chan string)
+	cchan := make(chan string)
+	echan := make(chan error)
+
+	id := anyall + "one"
+
+	err := publisher.Publish(id, pchan0)
+	if nil != err {
+		panic(err)
+	}
+
+	err = publisher.Publish(id, pchan1)
+	if nil != err {
+		panic(err)
+	}
+
+	err = publisher.Publish(id, pchan2)
+	if nil != err {
+		panic(err)
+	}
+
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.1",
+			Path:   id,
+		},
+		cchan,
+		echan)
+	if nil != err {
+		panic(err)
+	}
+
+	cchan <- "fortytwo"
+
+	close(cchan)
+
+	cnt := 1
+	if "+" == anyall {
+		cnt = 3
+	}
+
+	sum := 0
+	for i := 0; cnt > i; i++ {
+		s := ""
+		select {
+		case s = <-pchan0:
+			sum |= 1
+		case s = <-pchan1:
+			sum |= 2
+		case s = <-pchan2:
+			sum |= 4
+		}
+		if "fortytwo" != s {
+			t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
+		}
+	}
+
+	if "+" == anyall {
+		if 7 != sum {
+			t.Errorf("incorrect sum: expect %v, got %v", 7, sum)
+		}
+	}
+
+	publisher.Unpublish(id, pchan0)
+	publisher.Unpublish(id, pchan1)
+	publisher.Unpublish(id, pchan2)
+}
+
+func TestPublisherConnectorAnyAll(t *testing.T) {
+	marshaler := newGobMarshaler()
+	transport := newNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	publisher := newPublisher(transport)
+	connector := newConnector(transport)
+	defer func() {
+		time.Sleep(100 * time.Millisecond)
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testPublisherConnectorAnyAll(t, publisher, connector, "")
+	testPublisherConnectorAnyAll(t, publisher, connector, "+")
+}
+
+func TestDefaultPublisherConnectorAnyAll(t *testing.T) {
+	testPublisherConnectorAnyAll(t, DefaultPublisher, DefaultConnector, "")
+	testPublisherConnectorAnyAll(t, DefaultPublisher, DefaultConnector, "+")
+	time.Sleep(100 * time.Millisecond)
+}
+
 func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)

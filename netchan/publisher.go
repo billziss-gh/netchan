@@ -15,6 +15,7 @@ package netchan
 import (
 	"math/rand"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 )
@@ -44,9 +45,15 @@ func (self *publisher) Publish(id string, ichan interface{}) error {
 		panic(ErrArgumentInvalid)
 	}
 
-	err := self.transport.Listen()
-	if nil != err {
-		return err
+	if IdErr != id {
+		err := self.transport.Listen()
+		if nil != err {
+			return err
+		}
+	} else {
+		if errType != vchan.Type() {
+			panic(ErrArgumentInvalid)
+		}
 	}
 
 	self.pubmux.Lock()
@@ -100,36 +107,44 @@ func (self *publisher) recver(link Link) error {
 	for {
 		id, vmsg, err := link.Recv()
 		if nil != err {
+			id, vmsg = IdErr, reflect.ValueOf(err)
+		}
+
+		// make a copy so that we can safely use it outside the read lock
+		self.pubmux.RLock()
+		vlist := append([]reflect.Value(nil), self.pubmap[id].vlist...)
+		self.pubmux.RUnlock()
+
+		if 0 < len(vlist) {
+			index := pubrnd.Intn(len(vlist))
+			broadcast := strings.HasPrefix(id, strBroadcast)
+
+			for i := range vlist {
+				ok := func() (ok bool) {
+					defer recover()
+					vlist[(i+index)%len(vlist)].Send(vmsg)
+					ok = true
+					return
+				}()
+
+				if !broadcast && ok {
+					break
+				}
+			}
+		}
+
+		if nil != err {
 			if _, ok := err.(*ErrTransport); ok {
 				return err
-			}
-		} else {
-			// make a copy so that we can safely use it outside the read lock
-			self.pubmux.RLock()
-			vlist := append([]reflect.Value(nil), self.pubmap[id].vlist...)
-			self.pubmux.RUnlock()
-
-			if 0 < len(vlist) {
-				index := pubrnd.Intn(len(vlist))
-
-				for i := range vlist {
-					ok := func() (ok bool) {
-						defer recover()
-						vlist[i+index].Send(vmsg)
-						ok = true
-						return
-					}()
-
-					if ok {
-						break
-					}
-				}
 			}
 		}
 	}
 }
 
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)
+var IdErr = strBroadcast + "/err"
+var strBroadcast = "+"
+var errType = reflect.TypeOf(ErrArgumentInvalid)
 
 func Publish(id string, ichan interface{}) error {
 	return DefaultPublisher.Publish(id, ichan)
