@@ -102,12 +102,6 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 			break
 		}
 	}
-
-	if 1 == len(info.slist) {
-		delete(self.conmap, link)
-	} else {
-		self.conmap[link] = info
-	}
 }
 
 func (self *connector) sender(link Link) error {
