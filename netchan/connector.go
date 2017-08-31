@@ -105,56 +105,48 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 }
 
 func (self *connector) sender(link Link) error {
+outer:
 	for {
-		var (
-			slist []reflect.SelectCase
-			ilist []string
-			elist []chan error
-			i     int
-			vmsg  reflect.Value
-			ok    bool
-		)
-		for {
-			// make a copy so that we can safely use it outside the read lock
-			self.conmux.RLock()
-			info := self.conmap[link]
-			slist = append([]reflect.SelectCase(nil), info.slist...)
-			ilist = append([]string(nil), info.ilist...)
-			elist = append([]chan error(nil), info.elist...)
-			self.conmux.RUnlock()
+		// make a copy so that we can safely use it outside the read lock
+		self.conmux.RLock()
+		info := self.conmap[link]
+		slist := append([]reflect.SelectCase(nil), info.slist...)
+		ilist := append([]string(nil), info.ilist...)
+		elist := append([]chan error(nil), info.elist...)
+		self.conmux.RUnlock()
 
-			i, vmsg, ok = reflect.Select(slist)
+		for {
+			i, vmsg, ok := reflect.Select(slist)
 			if 0 == i {
-				continue
+				continue outer
 			}
 			if !ok {
 				self.disconnect(link, slist[i].Chan)
-				continue
+				continue outer
 			}
-			break
-		}
 
-		err := link.Send(ilist[i], vmsg)
-		if nil != err {
-			errmap := make(map[chan error]int)
-			for _, echan := range elist {
-				if nil != echan {
-					errmap[echan]++
+			err := link.Send(ilist[i], vmsg)
+			if nil != err {
+				errmap := make(map[chan error]int)
+				for _, echan := range elist {
+					if nil != echan {
+						errmap[echan]++
+					}
 				}
-			}
 
-			for echan := range errmap {
-				func() {
-					defer recover()
-					echan <- err
-				}()
-			}
+				for echan := range errmap {
+					func() {
+						defer recover()
+						echan <- err
+					}()
+				}
 
-			if _, ok := err.(*ErrTransport); !ok {
-				continue
-			}
+				if _, ok := err.(*ErrTransport); !ok {
+					continue
+				}
 
-			return err
+				return err
+			}
 		}
 	}
 }
