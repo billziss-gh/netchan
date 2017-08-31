@@ -99,7 +99,10 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 			info.slist = append(info.slist[:i], info.slist[i+1:]...)
 			info.ilist = append(info.ilist[:i], info.ilist[i+1:]...)
 			info.elist = append(info.elist[:i], info.elist[i+1:]...)
-			break
+
+			self.conmap[link] = info
+
+			return
 		}
 	}
 }

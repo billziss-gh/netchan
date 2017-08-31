@@ -85,12 +85,15 @@ func (self *publisher) Unpublish(id string, ichan interface{}) {
 		if v == vchan {
 			info.vlist = append(info.vlist[:i], info.vlist[i+1:]...)
 			info.elist = append(info.elist[:i], info.elist[i+1:]...)
-			break
-		}
-	}
 
-	if 0 == len(info.vlist) {
-		delete(self.pubmap, id)
+			if 0 == len(info.vlist) {
+				delete(self.pubmap, id)
+			} else {
+				self.pubmap[id] = info
+			}
+
+			return
+		}
 	}
 }
 
