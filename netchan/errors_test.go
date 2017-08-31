@@ -17,7 +17,14 @@ import (
 )
 
 func TestErr(t *testing.T) {
-	msg0 := ErrArgumentInvalid.(*Err).Message
+	_ = newErrArgument().(*ErrArgument)
+	_ = newErrTransport().(*ErrTransport)
+	_ = newErrMarshaler().(*ErrMarshaler)
+
+	msg0 := ErrArgumentInvalid.(*ErrArgument).Message
+	if "argument is invalid" != msg0 {
+		t.Errorf("incorrect error message: expect %v, got %v", "argument is invalid", msg0)
+	}
 
 	err := ErrArgumentInvalid
 	msg := err.Error()
@@ -25,19 +32,19 @@ func TestErr(t *testing.T) {
 		t.Errorf("incorrect error message: expect %v, got %v", msg0, msg)
 	}
 
-	err = new(ErrTransport).message("hello")
+	err = newErrTransport("hello")
 	msg = err.Error()
 	if "hello" != msg {
 		t.Errorf("incorrect error message: expect %v, got %v", "hello", msg)
 	}
 
-	err = new(ErrTransport).nested(ErrArgumentInvalid)
+	err = newErrTransport(ErrArgumentInvalid)
 	msg = err.Error()
 	if msg0 != msg {
 		t.Errorf("incorrect error message: expect %v, got %v", msg0, msg)
 	}
 
-	err = new(ErrTransport).message("hello").nested(ErrArgumentInvalid)
+	err = newErrTransport("hello", ErrArgumentInvalid)
 	msg = err.Error()
 	if "hello" != msg {
 		t.Errorf("incorrect error message: expect %v, got %v", "hello", msg)

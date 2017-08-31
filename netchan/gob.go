@@ -39,14 +39,14 @@ func (self *gobMarshaler) Marshal(id string, vmsg reflect.Value) (buf []byte, er
 
 	err = enc.Encode(id)
 	if nil != err {
-		err = new(ErrMarshaler).nested(err)
+		err = newErrMarshaler(err)
 		return
 	}
 
 	msg := vmsg.Interface()
 	err = enc.EncodeValue(reflect.ValueOf(&msg))
 	if nil != err {
-		err = new(ErrMarshaler).nested(err)
+		err = newErrMarshaler(err)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (self *gobMarshaler) Unmarshal(buf []byte) (id string, vmsg reflect.Value, 
 
 	err = dec.Decode(&id)
 	if nil != err {
-		err = new(ErrMarshaler).nested(err)
+		err = newErrMarshaler(err)
 		return
 	}
 
@@ -78,7 +78,7 @@ func (self *gobMarshaler) Unmarshal(buf []byte) (id string, vmsg reflect.Value, 
 	if nil != err {
 		id = ""
 		vmsg = reflect.Value{}
-		err = new(ErrMarshaler).nested(err)
+		err = newErrMarshaler(err)
 		return
 	}
 

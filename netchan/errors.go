@@ -17,34 +17,15 @@ type Err struct {
 	Nested  error
 }
 
-type ErrArgument struct {
-	Err
-}
-
-type ErrTransport struct {
-	Err
-}
-
-type ErrMarshaler struct {
-	Err
-}
-
-var (
-	ErrArgumentInvalid         error = new(ErrArgument).message("argument is invalid")
-	ErrTransportInvalid        error = new(ErrTransport).message("transport is invalid")
-	ErrTransportClosed         error = new(ErrTransport).message("transport is closed")
-	ErrTransportMessageCorrupt error = new(ErrTransport).message("transport message is corrupt")
-	ErrMarshalerPanic          error = new(ErrMarshaler).message("marshaler panic")
-)
-
-func (err *Err) message(message string) *Err {
-	err.Message = message
-	return err
-}
-
-func (err *Err) nested(nested error) *Err {
-	err.Nested = nested
-	return err
+func (err *Err) args(args []interface{}) {
+	for _, arg := range args {
+		switch a := arg.(type) {
+		case string:
+			err.Message = a
+		case error:
+			err.Nested = a
+		}
+	}
 }
 
 func (err *Err) Error() string {
@@ -53,3 +34,41 @@ func (err *Err) Error() string {
 	}
 	return err.Message
 }
+
+type ErrArgument struct {
+	Err
+}
+
+func newErrArgument(args ...interface{}) error {
+	err := &ErrArgument{}
+	err.args(args)
+	return err
+}
+
+type ErrTransport struct {
+	Err
+}
+
+func newErrTransport(args ...interface{}) error {
+	err := &ErrTransport{}
+	err.args(args)
+	return err
+}
+
+type ErrMarshaler struct {
+	Err
+}
+
+func newErrMarshaler(args ...interface{}) error {
+	err := &ErrMarshaler{}
+	err.args(args)
+	return err
+}
+
+var (
+	ErrArgumentInvalid         error = newErrArgument("argument is invalid")
+	ErrTransportInvalid        error = newErrTransport("transport is invalid")
+	ErrTransportClosed         error = newErrTransport("transport is closed")
+	ErrTransportMessageCorrupt error = newErrTransport("transport message is corrupt")
+	ErrMarshalerPanic          error = newErrMarshaler("marshaler panic")
+)
