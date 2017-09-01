@@ -13,6 +13,7 @@
 package netchan
 
 import (
+	"crypto/tls"
 	"net/url"
 	"reflect"
 	"sync/atomic"
@@ -76,7 +77,7 @@ func (self *testTransportRecverSender) transportSender(link Link) error {
 	return ErrTransportClosed
 }
 
-func testTransport(t *testing.T, transport Transport) {
+func testTransport(t *testing.T, transport Transport, scheme string) {
 	id0 := "NAME"
 	msg := "42,43,44,45,46"
 	trs := newTestTransportRecverSender(id0, msg, t)
@@ -93,7 +94,7 @@ func testTransport(t *testing.T, transport Transport) {
 	}
 
 	id, link, err := transport.Connect(&url.URL{
-		Scheme: "tcp",
+		Scheme: scheme,
 		Host:   "127.0.0.1",
 		Path:   "/" + id0,
 	})
@@ -111,7 +112,7 @@ func testTransport(t *testing.T, transport Transport) {
 	<-trs.done
 }
 
-func TestNetTransport(t *testing.T) {
+func TestTcpTransport(t *testing.T) {
 	marshaler := newGobMarshaler()
 	transport := newNetTransport(
 		marshaler,
@@ -121,5 +122,27 @@ func TestNetTransport(t *testing.T) {
 		})
 	defer transport.Close()
 
-	testTransport(t, transport)
+	testTransport(t, transport, "tcp")
+}
+
+func TestTlsTransport(t *testing.T) {
+	cert, err := tls.X509KeyPair([]byte(tlscert), []byte(tlskey))
+	if nil != err {
+		panic(err)
+	}
+
+	marshaler := newGobMarshaler()
+	transport := newNetTransportTLS(
+		marshaler,
+		&url.URL{
+			Scheme: "tls",
+			Host:   ":25000",
+		},
+		&tls.Config{
+			Certificates:       []tls.Certificate{cert},
+			InsecureSkipVerify: true,
+		})
+	defer transport.Close()
+
+	testTransport(t, transport, "tls")
 }
