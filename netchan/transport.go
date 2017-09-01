@@ -154,14 +154,20 @@ func (self *defaultTransport) registerTransport(scheme string, transport Transpo
 	defer self.tmux.Unlock()
 
 	self.transport[scheme] = transport
+
 	return transport
 }
 
-func (self *defaultTransport) unregisterTransport(scheme string) {
+func (self *defaultTransport) unregisterTransport(scheme string) Transport {
 	self.tmux.Lock()
 	defer self.tmux.Unlock()
 
-	delete(self.transport, scheme)
+	transport, ok := self.transport[scheme]
+	if ok {
+		delete(self.transport, scheme)
+	}
+
+	return transport
 }
 
 var DefaultTransport Transport = newDefaultTransport()
@@ -170,6 +176,6 @@ func RegisterTransport(scheme string, transport Transport) Transport {
 	return DefaultTransport.(*defaultTransport).registerTransport(scheme, transport)
 }
 
-func UnregisterTransport(scheme string) {
-	DefaultTransport.(*defaultTransport).unregisterTransport(scheme)
+func UnregisterTransport(scheme string) Transport {
+	return DefaultTransport.(*defaultTransport).unregisterTransport(scheme)
 }
