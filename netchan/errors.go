@@ -54,6 +54,7 @@ func (err *errData) Chan() interface{} {
 	return err.ichan
 }
 
+// Function/method argument errors.
 type ErrArgument struct {
 	errData
 }
@@ -64,6 +65,7 @@ func newErrArgument(args ...interface{}) error {
 	return err
 }
 
+// Network transport errors.
 type ErrTransport struct {
 	errData
 }
@@ -74,6 +76,7 @@ func newErrTransport(args ...interface{}) error {
 	return err
 }
 
+// Message encoding/decoding errors.
 type ErrMarshaler struct {
 	errData
 }

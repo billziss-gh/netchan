@@ -165,6 +165,12 @@ outer:
 
 var DefaultConnector Connector = newConnector(DefaultTransport)
 
-func Connect(uri *url.URL, ichan interface{}, echan chan error) error {
+// Connect uses the DefaultConnector and
+// connects a local channel to a remote channel that is addressed by uri. The uri
+// depends on the underlying network transport and may contain addressing and id information.
+//
+// The uri may be of type string or *url.URL. An error channel (type: chan error) may be
+// supplied as well; it will receive Connector network errors.
+func Connect(uri interface{}, ichan interface{}, echan chan error) error {
 	return DefaultConnector.Connect(uri, ichan, echan)
 }

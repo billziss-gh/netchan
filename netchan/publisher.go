@@ -142,14 +142,27 @@ func (self *publisher) recver(link Link) error {
 }
 
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)
-var IdErr = strBroadcast + "err/"
+var IdErr = "+err/"
 var strBroadcast = "+"
 var errType = reflect.TypeOf((*error)(nil)).Elem()
 
+// Publish uses the DefaultPublisher and
+// publishes a channel under an id. Multiple channels may be published under the same
+// id. When a channel is published, it becomes publicly accessible and may receive messages
+// over a network.
+//
+// Messages that target a specific id may be unicast (delivered to a single associated
+// channel) or broadcast (delivered to all the associated channels). Id's that start with the
+// character '+' are broadcast id's, all other id's are unicast id's.
+//
+// The special broadcast id IdErr may be used to publish an error channel (type: chan error)
+// that will receive Publisher network errors.
 func Publish(id string, ichan interface{}) error {
 	return DefaultPublisher.Publish(id, ichan)
 }
 
+// Unpublish uses the DefaultPublisher and
+// disassociates a channel from an id using the DefaultPublisher.
 func Unpublish(id string, ichan interface{}) {
 	DefaultPublisher.Unpublish(id, ichan)
 }
