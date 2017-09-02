@@ -53,10 +53,9 @@ func RefMarshal(val interface{}) ([]byte, error) {
 }
 
 func RefUnmarshal(buf []byte) (interface{}, error) {
-	refCipher.Decrypt(buf, buf)
+	var refbuf [16]byte
+	refCipher.Decrypt(refbuf[:], buf)
 
-	var refbuf [sizeofUintptr]byte
-	copy(refbuf[:], buf)
 	ref := *(*uintptr)(unsafe.Pointer(&refbuf))
 
 	val := strongref(ref)

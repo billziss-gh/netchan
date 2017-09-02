@@ -16,7 +16,9 @@ import (
 	"bytes"
 	"encoding/gob"
 	"reflect"
+	"runtime"
 	"testing"
+	"time"
 )
 
 func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 interface{}) {
@@ -108,6 +110,25 @@ func TestRefMarshal(t *testing.T) {
 
 	if c0 != d0 {
 		t.Errorf("incorrect marshal: expect %v, got %v", c0, d0)
+	}
+
+	if c1 != d1 {
+		t.Errorf("incorrect marshal: expect %v, got %v", c1, d1)
+	}
+
+	c0 = nil
+	d0 = nil
+	runtime.GC()
+	time.Sleep(300 * time.Millisecond)
+
+	d0, err = RefUnmarshal(buf0)
+	if nil != d0 || ErrMarshalerRef != err {
+		t.Errorf("incorrect marshal: expect error")
+	}
+
+	d1, err = RefUnmarshal(buf1)
+	if nil != err {
+		panic(err)
 	}
 
 	if c1 != d1 {
