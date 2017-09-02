@@ -52,13 +52,13 @@ func weakref(val interface{}) uintptr {
 		}
 		dat = &weakdat{weakcnt, ptr}
 
-		fin := func(val interface{}) {
+		fin := func(interface{}) {
 			weakmux.Lock()
 			defer weakmux.Unlock()
 			delete(weakmap[0], dat.ref)
 			delete(weakmap[1], dat.ptr[1])
 		}
-		runtime.SetFinalizer(val, fin)
+		runtime.SetFinalizer((*struct{})(unsafe.Pointer(ptr[1])), fin)
 
 		weakmap[0][dat.ref] = dat
 		weakmap[1][dat.ptr[1]] = dat

@@ -25,27 +25,23 @@ func TestWeakref(t *testing.T) {
 	}
 
 	c0 := make(chan error)
-	p0 := &c0
-
-	r0 := weakref(p0)
+	r0 := weakref(c0)
 	if 0 == r0 {
-		t.Errorf("incorrect nil weakref")
+		t.Errorf("incorrect non-nil weakref")
 	}
 
-	ref = weakref(p0)
+	ref = weakref(c0)
 	if r0 != ref {
 		t.Errorf("incorrect weakref: expect %v, got %v", r0, ref)
 	}
 
 	c1 := make(chan error)
-	p1 := &c1
-
-	r1 := weakref(p1)
+	r1 := weakref(c1)
 	if 0 == r1 {
-		t.Errorf("incorrect nil weakref")
+		t.Errorf("incorrect non-nil weakref")
 	}
 
-	ref = weakref(p1)
+	ref = weakref(c1)
 	if r1 != ref {
 		t.Errorf("incorrect weakref: expect %v, got %v", r1, ref)
 	}
@@ -54,28 +50,28 @@ func TestWeakref(t *testing.T) {
 		t.Errorf("incorrect equal weakrefs")
 	}
 
-	q0 := strongref(r0)
-	if p0 != q0 {
-		t.Errorf("incorrect weakref: expect %v, got %v", p0, q0)
+	d0 := strongref(r0)
+	if c0 != d0 {
+		t.Errorf("incorrect weakref: expect %v, got %v", c0, d0)
 	}
 
-	q1 := strongref(r1)
-	if p1 != q1 {
-		t.Errorf("incorrect weakref: expect %v, got %v", p0, q0)
+	d1 := strongref(r1)
+	if c1 != d1 {
+		t.Errorf("incorrect weakref: expect %v, got %v", c1, d1)
 	}
 
-	p0 = nil
-	q0 = nil
+	c0 = nil
+	d0 = nil
 	runtime.GC()
 	time.Sleep(300 * time.Millisecond)
 
-	q0 = strongref(r0)
-	if nil != q0 {
-		t.Errorf("incorrect weakref: expect %v, got %v", nil, q0)
+	d0 = strongref(r0)
+	if nil != d0 {
+		t.Errorf("incorrect weakref: expect %v, got %v", nil, d0)
 	}
 
-	q1 = strongref(r1)
-	if p1 != q1 {
-		t.Errorf("incorrect weakref: expect %v, got %v", p0, q0)
+	d1 = strongref(r1)
+	if c1 != d1 {
+		t.Errorf("incorrect weakref: expect %v, got %v", c1, d1)
 	}
 }
