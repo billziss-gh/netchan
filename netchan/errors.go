@@ -93,4 +93,5 @@ var (
 	ErrTransportClosed         error = newErrTransport("transport is closed")
 	ErrTransportMessageCorrupt error = newErrTransport("transport message is corrupt")
 	ErrMarshalerPanic          error = newErrMarshaler("marshaler panic")
+	ErrMarshalerRef            error = newErrMarshaler("marshaler cannot use ref")
 )

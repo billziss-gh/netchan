@@ -12,4 +12,59 @@
 
 package netchan
 
+import (
+	"crypto/aes"
+	"crypto/cipher"
+	crand "crypto/rand"
+	"unsafe"
+)
+
+const sizeofUintptr = unsafe.Sizeof(uintptr(0))
+
+var refCipher = newRefCipher()
+
+func newRefCipher() cipher.Block {
+	var key [16]byte
+
+	_, err := crand.Read(key[:])
+	if nil != err {
+		panic(err)
+	}
+
+	c, err := aes.NewCipher(key[:])
+	if nil != err {
+		panic(err)
+	}
+
+	return c
+}
+
+func RefMarshal(val interface{}) ([]byte, error) {
+	ref := weakref(val)
+	if 0 == ref {
+		return nil, ErrMarshalerRef
+	}
+
+	buf := make([]byte, 16)
+	copy(buf, (*(*[sizeofUintptr]byte)(unsafe.Pointer(&ref)))[:])
+	refCipher.Encrypt(buf, buf)
+
+	return buf, nil
+}
+
+func RefUnmarshal(buf []byte) (interface{}, error) {
+	refCipher.Decrypt(buf, buf)
+
+	var refbuf [sizeofUintptr]byte
+	copy(refbuf[:], buf)
+	ref := *(*uintptr)(unsafe.Pointer(&refbuf))
+
+	val := strongref(ref)
+	if nil == val {
+		return nil, ErrMarshalerRef
+	}
+
+	return val, nil
+}
+
 var DefaultMarshaler Marshaler = newGobMarshaler()

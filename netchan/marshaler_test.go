@@ -13,6 +13,7 @@
 package netchan
 
 import (
+	"bytes"
 	"encoding/gob"
 	"reflect"
 	"testing"
@@ -70,4 +71,46 @@ func TestGobMarshaler(t *testing.T) {
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
 
 	testMarshalerRoundtrip(t, marshaler, "ichan", ichanInst)
+}
+
+func TestRefMarshal(t *testing.T) {
+	c0 := make(chan struct{})
+	c1 := make(chan error)
+
+	buf0, err := RefMarshal(c0)
+	if nil != err {
+		panic(err)
+	}
+
+	buf1, err := RefMarshal(c0)
+	if nil != err {
+		panic(err)
+	}
+
+	if !bytes.Equal(buf0, buf1) {
+		t.Errorf("incorrect non-equal bytes")
+	}
+
+	buf1, err = RefMarshal(c1)
+	if nil != err {
+		panic(err)
+	}
+
+	d0, err := RefUnmarshal(buf0)
+	if nil != err {
+		panic(err)
+	}
+
+	d1, err := RefUnmarshal(buf1)
+	if nil != err {
+		panic(err)
+	}
+
+	if c0 != d0 {
+		t.Errorf("incorrect marshal: expect %v, got %v", c0, d0)
+	}
+
+	if c1 != d1 {
+		t.Errorf("incorrect marshal: expect %v, got %v", c1, d1)
+	}
 }
