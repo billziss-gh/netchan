@@ -39,6 +39,7 @@ func newRefCipher() cipher.Block {
 	return c
 }
 
+// RefMarshal encodes an object reference (e.g. a channel) as a byte array.
 func RefMarshal(val interface{}) ([]byte, error) {
 	ref := weakref(val)
 	if 0 == ref {
@@ -52,6 +53,9 @@ func RefMarshal(val interface{}) ([]byte, error) {
 	return buf, nil
 }
 
+// RefUnmarshal decodes a marshaled byte array and retrieves the original object reference.
+// If the original object reference has been garbage collected it returns the error
+// ErrMarshalerRef.
 func RefUnmarshal(buf []byte) (interface{}, error) {
 	var refbuf [16]byte
 	refCipher.Decrypt(refbuf[:], buf)
