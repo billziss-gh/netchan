@@ -73,6 +73,11 @@ func TestPublisherConnector(t *testing.T) {
 	testPublisherConnector(t, publisher, connector)
 }
 
+func TestDefaultPublisherConnector(t *testing.T) {
+	testPublisherConnector(t, DefaultPublisher, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
+}
+
 func testPublisherConnectorUri(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make(chan string)
 	cchan := make(chan string)
@@ -117,11 +122,6 @@ func TestPublisherConnectorUri(t *testing.T) {
 	}()
 
 	testPublisherConnectorUri(t, publisher, connector)
-}
-
-func TestDefaultPublisherConnector(t *testing.T) {
-	testPublisherConnector(t, DefaultPublisher, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }
 
 func testPublisherConnectorAnyAll(t *testing.T, publisher Publisher, connector Connector,
