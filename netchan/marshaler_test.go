@@ -14,11 +14,12 @@ package netchan
 
 import (
 	"bytes"
-	"encoding/gob"
 	"reflect"
 	"runtime"
 	"testing"
 	"time"
+
+	"github.com/billziss-gh/netgob/gob"
 )
 
 func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 interface{}) {

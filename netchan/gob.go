@@ -14,8 +14,9 @@ package netchan
 
 import (
 	"bytes"
-	"encoding/gob"
 	"reflect"
+
+	"github.com/billziss-gh/netgob/gob"
 )
 
 type gobMarshaler struct {
