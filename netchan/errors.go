@@ -88,10 +88,9 @@ func newErrMarshaler(args ...interface{}) error {
 }
 
 var (
-	ErrArgumentInvalid         error = newErrArgument("argument is invalid")
-	ErrTransportInvalid        error = newErrTransport("transport is invalid")
-	ErrTransportClosed         error = newErrTransport("transport is closed")
-	ErrTransportMessageCorrupt error = newErrTransport("transport message is corrupt")
-	ErrMarshalerPanic          error = newErrMarshaler("marshaler panic")
-	ErrMarshalerRef            error = newErrMarshaler("marshaler cannot use ref")
+	ErrArgumentInvalid         error = newErrArgument("netchan: argument is invalid")
+	ErrTransportInvalid        error = newErrTransport("netchan: transport is invalid")
+	ErrTransportClosed         error = newErrTransport("netchan: transport is closed")
+	ErrTransportMessageCorrupt error = newErrTransport("netchan: transport message is corrupt")
+	ErrMarshalerPanic          error = newErrMarshaler("netchan: marshaler panic")
 )

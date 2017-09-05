@@ -26,8 +26,8 @@ func TestErr(t *testing.T) {
 	_ = newErrMarshaler().(*ErrMarshaler)
 
 	msg0 := ErrArgumentInvalid.(*ErrArgument).message
-	if "argument is invalid" != msg0 {
-		t.Errorf("incorrect error message: expect %v, got %v", "argument is invalid", msg0)
+	if "netchan: argument is invalid" != msg0 {
+		t.Errorf("incorrect error message: expect %v, got %v", "netchan: argument is invalid", msg0)
 	}
 
 	err := ErrArgumentInvalid
