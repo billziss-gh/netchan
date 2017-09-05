@@ -93,4 +93,5 @@ var (
 	ErrTransportClosed         error = newErrTransport("netchan: transport is closed")
 	ErrTransportMessageCorrupt error = newErrTransport("netchan: transport message is corrupt")
 	ErrMarshalerPanic          error = newErrMarshaler("netchan: marshaler panic")
+	ErrMarshalerRef            error = newErrMarshaler("netchan: marshaler ref is invalid")
 )

@@ -41,6 +41,7 @@ func (self *gobMarshaler) Marshal(id string, vmsg reflect.Value) (buf []byte, er
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, 4))
 	enc := gob.NewEncoder(wrt)
+	enc.SetNetgobEncoder(self)
 
 	err = enc.Encode(id)
 	if nil != err {
@@ -71,6 +72,7 @@ func (self *gobMarshaler) Unmarshal(buf []byte) (id string, vmsg reflect.Value, 
 	rdr := bytes.NewBuffer(buf)
 	rdr.Read(make([]byte, 4))
 	dec := gob.NewDecoder(rdr)
+	dec.SetNetgobDecoder(self)
 
 	err = dec.Decode(&id)
 	if nil != err {
@@ -89,6 +91,33 @@ func (self *gobMarshaler) Unmarshal(buf []byte) (id string, vmsg reflect.Value, 
 
 	vmsg = reflect.ValueOf(msg)
 	return
+}
+
+func (self *gobMarshaler) NetgobEncode(i interface{}) ([]byte, error) {
+	w := chanmap.weakref(i)
+	if (weakref{}) == w {
+		return nil, ErrMarshalerRef
+	}
+
+	return w[:], nil
+}
+
+func (self *gobMarshaler) NetgobDecode(i interface{}, buf []byte) error {
+	v := reflect.ValueOf(i).Elem()
+
+	var w weakref
+	copy(w[:], buf)
+
+	s := chanmap.strongref(w, func() interface{} {
+		return reflect.MakeChan(v.Type(), 1).Interface()
+	})
+	if nil == s {
+		return ErrMarshalerRef
+	}
+
+	v.Set(reflect.ValueOf(s))
+
+	return nil
 }
 
 var _ Marshaler = (*gobMarshaler)(nil)

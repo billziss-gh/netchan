@@ -42,31 +42,18 @@ func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 
 type testData struct {
 	I int
 	S string
-}
-
-type ichan chan int
-
-var ichanInst ichan = make(chan int)
-
-func (self ichan) GobEncode() ([]byte, error) {
-	return []byte{42}, nil
-}
-
-func (self *ichan) GobDecode([]byte) error {
-	*self = ichanInst
-	return nil
+	C chan string
 }
 
 func TestGobMarshaler(t *testing.T) {
 	marshaler := newGobMarshaler()
 
 	marshaler.RegisterType(testData{})
-	marshaler.RegisterType(ichan(make(chan int)))
 
 	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
 
-	td := testData{10, "ten"}
-	testMarshalerRoundtrip(t, marshaler, "10ten", td)
+	testMarshalerRoundtrip(t, marshaler, "ichan", make(chan struct{}))
 
-	testMarshalerRoundtrip(t, marshaler, "ichan", ichanInst)
+	td := testData{10, "ten", make(chan string)}
+	testMarshalerRoundtrip(t, marshaler, "10ten", td)
 }

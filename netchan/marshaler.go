@@ -13,3 +13,4 @@
 package netchan
 
 var DefaultMarshaler Marshaler = newGobMarshaler()
+var chanmap = newWeakmap()
