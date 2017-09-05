@@ -15,8 +15,6 @@ package netchan
 import (
 	"reflect"
 	"testing"
-
-	"github.com/billziss-gh/netgob/gob"
 )
 
 func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 interface{}) {
@@ -62,8 +60,8 @@ func (self *ichan) GobDecode([]byte) error {
 func TestGobMarshaler(t *testing.T) {
 	marshaler := newGobMarshaler()
 
-	gob.Register(testData{})
-	gob.Register(ichan(make(chan int)))
+	marshaler.RegisterType(testData{})
+	marshaler.RegisterType(ichan(make(chan int)))
 
 	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
 

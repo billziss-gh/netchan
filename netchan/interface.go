@@ -75,6 +75,7 @@ type Transport interface {
 
 // Marshaler is used to provide message encoding/decoding support to publishers and connectors.
 type Marshaler interface {
+	RegisterType(val interface{})
 	Marshal(id string, vmsg reflect.Value) (buf []byte, err error)
 	Unmarshal(buf []byte) (id string, vmsg reflect.Value, err error)
 }

@@ -26,6 +26,10 @@ func newGobMarshaler() *gobMarshaler {
 	return &gobMarshaler{}
 }
 
+func (self *gobMarshaler) RegisterType(val interface{}) {
+	gob.Register(val)
+}
+
 func (self *gobMarshaler) Marshal(id string, vmsg reflect.Value) (buf []byte, err error) {
 	defer func() {
 		if r := recover(); nil != r {
