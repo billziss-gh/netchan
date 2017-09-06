@@ -141,7 +141,7 @@ func (self *netLink) Recv() (id string, vmsg reflect.Value, err error) {
 		return
 	}
 
-	id, vmsg, err = self.owner.transport.marshaler.Unmarshal(buf)
+	id, vmsg, err = self.owner.transport.marshaler.Unmarshal(self, buf)
 	if nil != err {
 		self.reset(false)
 		return
@@ -156,7 +156,7 @@ func (self *netLink) Send(id string, vmsg reflect.Value) (err error) {
 		return
 	}
 
-	buf, err := self.owner.transport.marshaler.Marshal(id, vmsg)
+	buf, err := self.owner.transport.marshaler.Marshal(self, id, vmsg)
 	if nil != err {
 		// do not reset the link
 		return
@@ -262,6 +262,14 @@ func newNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) *
 		tlscfg:    tlscfg,
 		mlink:     make(map[string]*netMultiLink),
 	}
+}
+
+func (self *netTransport) SetChanEncoder(chanEnc ChanEncoder) {
+	self.marshaler.SetChanEncoder(chanEnc)
+}
+
+func (self *netTransport) SetChanDecoder(chanDec ChanDecoder) {
+	self.marshaler.SetChanDecoder(chanDec)
 }
 
 func (self *netTransport) SetRecver(recver func(link Link) error) {

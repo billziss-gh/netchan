@@ -64,6 +64,8 @@ func writeMsg(w io.Writer, msg []byte) error {
 }
 
 type defaultTransport struct {
+	chanEnc   ChanEncoder
+	chanDec   ChanDecoder
 	recver    func(link Link) error
 	sender    func(link Link) error
 	lmux      sync.Mutex
@@ -77,6 +79,14 @@ func newDefaultTransport() *defaultTransport {
 	return &defaultTransport{
 		transport: make(map[string]Transport),
 	}
+}
+
+func (self *defaultTransport) SetChanEncoder(chanEnc ChanEncoder) {
+	self.chanEnc = chanEnc
+}
+
+func (self *defaultTransport) SetChanDecoder(chanDec ChanDecoder) {
+	self.chanDec = chanDec
 }
 
 func (self *defaultTransport) SetRecver(recver func(link Link) error) {
@@ -101,7 +111,7 @@ func (self *defaultTransport) Listen() (err error) {
 		self.tmux.RLock()
 		defer self.tmux.RUnlock()
 
-		self.transportSetRecverSender()
+		self.initTransports()
 		for scheme, transport := range self.transport {
 			err0 := transport.Listen()
 			if nil == err0 {
@@ -130,7 +140,7 @@ func (self *defaultTransport) Connect(uri *url.URL) (string, Link, error) {
 		return "", nil, ErrTransportInvalid
 	}
 
-	self.transportSetRecverSender()
+	self.initTransports()
 	return transport.Connect(uri)
 }
 
@@ -140,9 +150,11 @@ func (self *defaultTransport) Close() {
 	 */
 }
 
-func (self *defaultTransport) transportSetRecverSender() {
+func (self *defaultTransport) initTransports() {
 	self.tonce.Do(func() {
 		for _, transport := range self.transport {
+			transport.SetChanEncoder(self.chanEnc)
+			transport.SetChanDecoder(self.chanDec)
 			transport.SetRecver(self.recver)
 			transport.SetSender(self.sender)
 		}

@@ -20,6 +20,8 @@ import (
 )
 
 type gobMarshaler struct {
+	chanEnc ChanEncoder
+	chanDec ChanDecoder
 }
 
 func newGobMarshaler() *gobMarshaler {
@@ -30,7 +32,16 @@ func (self *gobMarshaler) RegisterType(val interface{}) {
 	gob.Register(val)
 }
 
-func (self *gobMarshaler) Marshal(id string, vmsg reflect.Value) (buf []byte, err error) {
+func (self *gobMarshaler) SetChanEncoder(chanEnc ChanEncoder) {
+	self.chanEnc = chanEnc
+}
+
+func (self *gobMarshaler) SetChanDecoder(chanDec ChanDecoder) {
+	self.chanDec = chanDec
+}
+
+func (self *gobMarshaler) Marshal(
+	link Link, id string, vmsg reflect.Value) (buf []byte, err error) {
 	defer func() {
 		if r := recover(); nil != r {
 			buf = nil
@@ -60,7 +71,8 @@ func (self *gobMarshaler) Marshal(id string, vmsg reflect.Value) (buf []byte, er
 	return
 }
 
-func (self *gobMarshaler) Unmarshal(buf []byte) (id string, vmsg reflect.Value, err error) {
+func (self *gobMarshaler) Unmarshal(
+	link Link, buf []byte) (id string, vmsg reflect.Value, err error) {
 	defer func() {
 		if r := recover(); nil != r {
 			id = ""

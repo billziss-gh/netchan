@@ -64,8 +64,18 @@ type Link interface {
 	Send(id string, vmsg reflect.Value) (err error)
 }
 
+type ChanEncoder interface {
+	ChanEncode(link Link, ichan interface{}) ([]byte, error)
+}
+
+type ChanDecoder interface {
+	ChanDecode(link Link, ichan interface{}, buf []byte) error
+}
+
 // Transport is used to provide network transport support to publishers and connectors.
 type Transport interface {
+	SetChanEncoder(chanEnc ChanEncoder)
+	SetChanDecoder(chanDec ChanDecoder)
 	SetRecver(func(link Link) error)
 	SetSender(func(link Link) error)
 	Listen() error
@@ -76,6 +86,8 @@ type Transport interface {
 // Marshaler is used to provide message encoding/decoding support to publishers and connectors.
 type Marshaler interface {
 	RegisterType(val interface{})
-	Marshal(id string, vmsg reflect.Value) (buf []byte, err error)
-	Unmarshal(buf []byte) (id string, vmsg reflect.Value, err error)
+	SetChanEncoder(chanEnc ChanEncoder)
+	SetChanDecoder(chanDec ChanDecoder)
+	Marshal(link Link, id string, vmsg reflect.Value) (buf []byte, err error)
+	Unmarshal(link Link, buf []byte) (id string, vmsg reflect.Value, err error)
 }
