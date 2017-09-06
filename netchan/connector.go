@@ -35,6 +35,7 @@ func newConnector(transport Transport) *connector {
 		transport: transport,
 		conmap:    make(map[Link]coninfo),
 	}
+	transport.SetChanDecoder(self)
 	transport.SetSender(self.sender)
 	return self
 }
@@ -161,6 +162,24 @@ outer:
 			}
 		}
 	}
+}
+
+func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) error {
+	v := reflect.ValueOf(ichan).Elem()
+
+	var w weakref
+	copy(w[:], buf)
+
+	s := chanmap.strongref(w, func() interface{} {
+		return reflect.MakeChan(v.Type(), 1).Interface()
+	})
+	if nil == s {
+		return ErrMarshalerRef
+	}
+
+	v.Set(reflect.ValueOf(s))
+
+	return nil
 }
 
 var DefaultConnector Connector = newConnector(DefaultTransport)

@@ -45,14 +45,18 @@ func (self *gobMarshaler) Marshal(
 	defer func() {
 		if r := recover(); nil != r {
 			buf = nil
-			err = ErrMarshalerPanic
+			if e, ok := r.(error); ok {
+				err = newErrMarshaler(e)
+			} else {
+				err = ErrMarshalerPanic
+			}
 		}
 	}()
 
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, 4))
 	enc := gob.NewEncoder(wrt)
-	enc.SetNetgobEncoder(self)
+	enc.SetNetgobEncoder(&gobMarshalerNetgobEncoder{self.chanEnc, link})
 
 	err = enc.Encode(id)
 	if nil != err {
@@ -77,14 +81,18 @@ func (self *gobMarshaler) Unmarshal(
 		if r := recover(); nil != r {
 			id = ""
 			vmsg = reflect.Value{}
-			err = ErrMarshalerPanic
+			if e, ok := r.(error); ok {
+				err = newErrMarshaler(e)
+			} else {
+				err = ErrMarshalerPanic
+			}
 		}
 	}()
 
 	rdr := bytes.NewBuffer(buf)
 	rdr.Read(make([]byte, 4))
 	dec := gob.NewDecoder(rdr)
-	dec.SetNetgobDecoder(self)
+	dec.SetNetgobDecoder(&gobMarshalerNetgobDecoder{self.chanDec, link})
 
 	err = dec.Decode(&id)
 	if nil != err {
@@ -105,31 +113,28 @@ func (self *gobMarshaler) Unmarshal(
 	return
 }
 
-func (self *gobMarshaler) NetgobEncode(i interface{}) ([]byte, error) {
-	w := chanmap.weakref(i)
-	if (weakref{}) == w {
-		return nil, ErrMarshalerRef
-	}
-
-	return w[:], nil
+type gobMarshalerNetgobEncoder struct {
+	chanEnc ChanEncoder
+	link    Link
 }
 
-func (self *gobMarshaler) NetgobDecode(i interface{}, buf []byte) error {
-	v := reflect.ValueOf(i).Elem()
-
-	var w weakref
-	copy(w[:], buf)
-
-	s := chanmap.strongref(w, func() interface{} {
-		return reflect.MakeChan(v.Type(), 1).Interface()
-	})
-	if nil == s {
-		return ErrMarshalerRef
+func (self *gobMarshalerNetgobEncoder) NetgobEncode(i interface{}) ([]byte, error) {
+	if nil == self.chanEnc {
+		return nil, ErrMarshalerChanEncoder
 	}
+	return self.chanEnc.ChanEncode(self.link, i)
+}
 
-	v.Set(reflect.ValueOf(s))
+type gobMarshalerNetgobDecoder struct {
+	chanDec ChanDecoder
+	link    Link
+}
 
-	return nil
+func (self *gobMarshalerNetgobDecoder) NetgobDecode(i interface{}, buf []byte) error {
+	if nil == self.chanDec {
+		return ErrMarshalerChanDecoder
+	}
+	return self.chanDec.ChanDecode(self.link, i, buf)
 }
 
 var _ Marshaler = (*gobMarshaler)(nil)

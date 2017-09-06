@@ -36,6 +36,7 @@ func newPublisher(transport Transport) *publisher {
 		transport: transport,
 		pubmap:    make(map[string]pubinfo),
 	}
+	transport.SetChanEncoder(self)
 	transport.SetRecver(self.recver)
 	return self
 }
@@ -156,6 +157,15 @@ func (self *publisher) recver(link Link) error {
 			}
 		}
 	}
+}
+
+func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
+	w := chanmap.weakref(ichan)
+	if (weakref{}) == w {
+		return nil, ErrMarshalerRef
+	}
+
+	return w[:], nil
 }
 
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)

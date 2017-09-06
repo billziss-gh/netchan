@@ -17,6 +17,34 @@ import (
 	"testing"
 )
 
+type testMarshalerCoder struct {
+}
+
+func (self *testMarshalerCoder) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
+	w := chanmap.weakref(ichan)
+	if (weakref{}) == w {
+		return nil, ErrMarshalerRef
+	}
+
+	return w[:], nil
+}
+
+func (self *testMarshalerCoder) ChanDecode(link Link, ichan interface{}, buf []byte) error {
+	v := reflect.ValueOf(ichan).Elem()
+
+	var w weakref
+	copy(w[:], buf)
+
+	s := chanmap.strongref(w, nil)
+	if nil == s {
+		return ErrMarshalerRef
+	}
+
+	v.Set(reflect.ValueOf(s))
+
+	return nil
+}
+
 func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 interface{}) {
 	vmsg0 := reflect.ValueOf(msg0)
 	buf, err := marshaler.Marshal(nil, id0, vmsg0)
@@ -46,7 +74,11 @@ type testData struct {
 }
 
 func TestGobMarshaler(t *testing.T) {
+	coder := &testMarshalerCoder{}
+
 	marshaler := newGobMarshaler()
+	marshaler.SetChanEncoder(coder)
+	marshaler.SetChanDecoder(coder)
 
 	marshaler.RegisterType(testData{})
 
