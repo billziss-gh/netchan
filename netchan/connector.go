@@ -28,12 +28,14 @@ type connector struct {
 	transport Transport
 	conmux    sync.RWMutex
 	conmap    map[Link]coninfo
+	chanmap   *weakmap
 }
 
 func newConnector(transport Transport) *connector {
 	self := &connector{
 		transport: transport,
 		conmap:    make(map[Link]coninfo),
+		chanmap:   newWeakmap(),
 	}
 	transport.SetChanDecoder(self)
 	transport.SetSender(self.sender)
@@ -170,7 +172,7 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	var w weakref
 	copy(w[:], buf)
 
-	s := chanmap.strongref(w, func() interface{} {
+	s := self.chanmap.strongref(w, func() interface{} {
 		return reflect.MakeChan(v.Type(), 1).Interface()
 	})
 	if nil == s {

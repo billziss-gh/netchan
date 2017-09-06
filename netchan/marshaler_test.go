@@ -18,10 +18,11 @@ import (
 )
 
 type testMarshalerCoder struct {
+	chanmap *weakmap
 }
 
 func (self *testMarshalerCoder) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
-	w := chanmap.weakref(ichan)
+	w := self.chanmap.weakref(ichan)
 	if (weakref{}) == w {
 		return nil, ErrMarshalerRef
 	}
@@ -35,7 +36,7 @@ func (self *testMarshalerCoder) ChanDecode(link Link, ichan interface{}, buf []b
 	var w weakref
 	copy(w[:], buf)
 
-	s := chanmap.strongref(w, nil)
+	s := self.chanmap.strongref(w, nil)
 	if nil == s {
 		return ErrMarshalerRef
 	}
@@ -74,7 +75,7 @@ type testData struct {
 }
 
 func TestGobMarshaler(t *testing.T) {
-	coder := &testMarshalerCoder{}
+	coder := &testMarshalerCoder{newWeakmap()}
 
 	marshaler := newGobMarshaler()
 	marshaler.SetChanEncoder(coder)

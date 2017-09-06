@@ -29,12 +29,14 @@ type publisher struct {
 	transport Transport
 	pubmux    sync.RWMutex
 	pubmap    map[string]pubinfo
+	chanmap   *weakmap
 }
 
 func newPublisher(transport Transport) *publisher {
 	self := &publisher{
 		transport: transport,
 		pubmap:    make(map[string]pubinfo),
+		chanmap:   newWeakmap(),
 	}
 	transport.SetChanEncoder(self)
 	transport.SetRecver(self.recver)
@@ -119,7 +121,7 @@ func (self *publisher) recver(link Link) error {
 			var w weakref
 			_, err := base64.RawURLEncoding.Decode(w[:], []byte(id[1:len(id)-1]))
 			if nil != err {
-				ichan := chanmap.strongref(w, nil)
+				ichan := self.chanmap.strongref(w, nil)
 				if nil != ichan {
 					vlist = append(vlist, reflect.ValueOf(ichan))
 				}
@@ -160,7 +162,7 @@ func (self *publisher) recver(link Link) error {
 }
 
 func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
-	w := chanmap.weakref(ichan)
+	w := self.chanmap.weakref(ichan)
 	if (weakref{}) == w {
 		return nil, ErrMarshalerRef
 	}
