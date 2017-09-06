@@ -13,6 +13,7 @@
 package netchan
 
 import (
+	"encoding/base64"
 	"math/rand"
 	"reflect"
 	"strings"
@@ -110,10 +111,26 @@ func (self *publisher) recver(link Link) error {
 			id, vmsg = IdErr, reflect.ValueOf(err)
 		}
 
-		// make a copy so that we can safely use it outside the read lock
-		self.pubmux.RLock()
-		vlist := append([]reflect.Value(nil), self.pubmap[id].vlist...)
-		self.pubmux.RUnlock()
+		var vlist []reflect.Value
+		if lenImplicit == len(id) && strImplicit[0] == id[0] && strImplicit[1] == id[len(id)-1] {
+			// implicit id: '(' base64 ')'; check if it is a weakref
+
+			var w weakref
+			_, err := base64.RawURLEncoding.Decode(w[:], []byte(id[1:len(id)-1]))
+			if nil != err {
+				ichan := chanmap.strongref(w, nil)
+				if nil != ichan {
+					vlist = append(vlist, reflect.ValueOf(ichan))
+				}
+			}
+		} else {
+			// published id
+
+			// make a copy so that we can safely use it outside the read lock
+			self.pubmux.RLock()
+			vlist = append(vlist, self.pubmap[id].vlist...)
+			self.pubmux.RUnlock()
+		}
 
 		if 0 < len(vlist) {
 			index := pubrnd.Intn(len(vlist))
@@ -144,6 +161,8 @@ func (self *publisher) recver(link Link) error {
 var DefaultPublisher Publisher = newPublisher(DefaultTransport)
 var IdErr = "+err/"
 var strBroadcast = "+"
+var strImplicit = "()"
+var lenImplicit = base64.RawURLEncoding.EncodedLen(len(weakref{}))
 var errType = reflect.TypeOf((*error)(nil)).Elem()
 
 // Publish uses the DefaultPublisher and
