@@ -24,7 +24,7 @@ type testMarshalerCoder struct {
 func (self *testMarshalerCoder) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
 	w := self.chanmap.weakref(ichan)
 	if (weakref{}) == w {
-		return nil, ErrMarshalerRef
+		return nil, ErrMarshalerRefInvalid
 	}
 
 	return w[:], nil
@@ -38,7 +38,7 @@ func (self *testMarshalerCoder) ChanDecode(link Link, ichan interface{}, buf []b
 
 	s := self.chanmap.strongref(w, nil)
 	if nil == s {
-		return ErrMarshalerRef
+		return ErrMarshalerRefInvalid
 	}
 
 	v.Set(reflect.ValueOf(s))

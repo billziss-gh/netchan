@@ -164,7 +164,7 @@ func (self *publisher) recver(link Link) error {
 func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
 	w := self.chanmap.weakref(ichan)
 	if (weakref{}) == w {
-		return nil, ErrMarshalerRef
+		return nil, ErrMarshalerRefInvalid
 	}
 
 	return w[:], nil

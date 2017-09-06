@@ -120,7 +120,7 @@ type gobMarshalerNetgobEncoder struct {
 
 func (self *gobMarshalerNetgobEncoder) NetgobEncode(i interface{}) ([]byte, error) {
 	if nil == self.chanEnc {
-		return nil, ErrMarshalerChanEncoder
+		return nil, ErrMarshalerNoChanEncoder
 	}
 	return self.chanEnc.ChanEncode(self.link, i)
 }
@@ -132,7 +132,7 @@ type gobMarshalerNetgobDecoder struct {
 
 func (self *gobMarshalerNetgobDecoder) NetgobDecode(i interface{}, buf []byte) error {
 	if nil == self.chanDec {
-		return ErrMarshalerChanDecoder
+		return ErrMarshalerNoChanDecoder
 	}
 	return self.chanDec.ChanDecode(self.link, i, buf)
 }

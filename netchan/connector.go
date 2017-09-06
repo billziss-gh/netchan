@@ -176,7 +176,7 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 		return reflect.MakeChan(v.Type(), 1).Interface()
 	})
 	if nil == s {
-		return ErrMarshalerRef
+		return ErrMarshalerRefInvalid
 	}
 
 	v.Set(reflect.ValueOf(s))
