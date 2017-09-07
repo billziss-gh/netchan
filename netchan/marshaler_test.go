@@ -90,3 +90,18 @@ func TestGobMarshaler(t *testing.T) {
 	td := testData{10, "ten", make(chan string)}
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
 }
+
+func TestRefEncodeDecode(t *testing.T) {
+	w0 := weakref{42, 43, 44}
+	s := RefEncode(w0)
+
+	w, ok := RefDecode(s)
+	if !ok || w0 != w {
+		t.Errorf("incorrect ref: expect %v, got %v", w0, w)
+	}
+
+	w, ok = RefDecode(s[1:])
+	if ok || w0 == w {
+		t.Errorf("incorrect ref: expect !ok")
+	}
+}

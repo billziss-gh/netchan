@@ -69,6 +69,12 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 
 	// It is a programmatic error to Connect the same channel multiple times.
 
+	self.connect(id, link, vchan, echan)
+
+	return nil
+}
+
+func (self *connector) connect(id string, link Link, vchan reflect.Value, echan chan error) {
 	self.conmux.Lock()
 	defer self.conmux.Unlock()
 
@@ -102,8 +108,6 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 
 		link.Open()
 	}
-
-	return nil
 }
 
 func (self *connector) disconnect(link Link, vchan reflect.Value) {
@@ -180,6 +184,9 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	}
 
 	v.Set(reflect.ValueOf(s))
+
+	id := RefEncode(w)
+	self.connect(id, link, reflect.ValueOf(s), nil)
 
 	return nil
 }
