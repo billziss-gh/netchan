@@ -60,7 +60,8 @@ type ErrArgument struct {
 	errData
 }
 
-func newErrArgument(args ...interface{}) error {
+// NewErrArgument creates a new function/method argument error.
+func NewErrArgument(args ...interface{}) error {
 	err := &ErrArgument{}
 	err._args(args)
 	return err
@@ -72,7 +73,8 @@ type ErrTransport struct {
 	errData
 }
 
-func newErrTransport(args ...interface{}) error {
+// NewErrTransport creates a new network transport error.
+func NewErrTransport(args ...interface{}) error {
 	err := &ErrTransport{}
 	err._args(args)
 	return err
@@ -84,7 +86,8 @@ type ErrMarshaler struct {
 	errData
 }
 
-func newErrMarshaler(args ...interface{}) error {
+// NewErrMarshaler creates a new message encoding/decoding error.
+func NewErrMarshaler(args ...interface{}) error {
 	err := &ErrMarshaler{}
 	err._args(args)
 	return err
@@ -93,14 +96,14 @@ func newErrMarshaler(args ...interface{}) error {
 // Errors reports by this package. Other errors are also possible.
 // All errors reported implement the Err interface.
 var (
-	ErrArgumentInvalid         error = newErrArgument("netchan: argument is invalid")
-	ErrArgumentConnected       error = newErrArgument("netchan: argument chan is connected")
-	ErrArgumentNotConnected    error = newErrArgument("netchan: argument chan is not connected")
-	ErrTransportInvalid        error = newErrTransport("netchan: transport is invalid")
-	ErrTransportClosed         error = newErrTransport("netchan: transport is closed")
-	ErrTransportMessageCorrupt error = newErrTransport("netchan: transport message is corrupt")
-	ErrMarshalerNoChanEncoder  error = newErrMarshaler("netchan: marshaler chan encoder not set")
-	ErrMarshalerNoChanDecoder  error = newErrMarshaler("netchan: marshaler chan decoder not set")
-	ErrMarshalerRefInvalid     error = newErrMarshaler("netchan: marshaler ref is invalid")
-	ErrMarshalerPanic          error = newErrMarshaler("netchan: marshaler panic")
+	ErrArgumentInvalid         error = NewErrArgument("netchan: argument is invalid")
+	ErrArgumentConnected       error = NewErrArgument("netchan: argument chan is connected")
+	ErrArgumentNotConnected    error = NewErrArgument("netchan: argument chan is not connected")
+	ErrTransportInvalid        error = NewErrTransport("netchan: transport is invalid")
+	ErrTransportClosed         error = NewErrTransport("netchan: transport is closed")
+	ErrTransportMessageCorrupt error = NewErrTransport("netchan: transport message is corrupt")
+	ErrMarshalerNoChanEncoder  error = NewErrMarshaler("netchan: marshaler chan encoder not set")
+	ErrMarshalerNoChanDecoder  error = NewErrMarshaler("netchan: marshaler chan decoder not set")
+	ErrMarshalerRefInvalid     error = NewErrMarshaler("netchan: marshaler ref is invalid")
+	ErrMarshalerPanic          error = NewErrMarshaler("netchan: marshaler panic")
 )

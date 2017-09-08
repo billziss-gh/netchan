@@ -22,7 +22,7 @@ func readMsg(r io.Reader) ([]byte, error) {
 	buf := [4]byte{}
 	_, err := io.ReadFull(r, buf[:])
 	if nil != err {
-		return nil, newErrTransport(err)
+		return nil, NewErrTransport(err)
 	}
 
 	n := int(buf[0]) | (int(buf[1]) << 8) | (int(buf[2]) << 16) | (int(buf[3]) << 24)
@@ -33,7 +33,7 @@ func readMsg(r io.Reader) ([]byte, error) {
 	msg := make([]byte, n)
 	_, err = io.ReadFull(r, msg[4:])
 	if nil != err {
-		return nil, newErrTransport(err)
+		return nil, NewErrTransport(err)
 	}
 
 	msg[0] = buf[0]
@@ -57,7 +57,7 @@ func writeMsg(w io.Writer, msg []byte) error {
 
 	_, err := w.Write(msg)
 	if nil != err {
-		return newErrTransport(err)
+		return NewErrTransport(err)
 	}
 
 	return nil

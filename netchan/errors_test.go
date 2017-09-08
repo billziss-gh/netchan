@@ -17,13 +17,13 @@ import (
 )
 
 func TestErr(t *testing.T) {
-	_ = newErrArgument().(Err)
-	_ = newErrTransport().(Err)
-	_ = newErrMarshaler().(Err)
+	_ = NewErrArgument().(Err)
+	_ = NewErrTransport().(Err)
+	_ = NewErrMarshaler().(Err)
 
-	_ = newErrArgument().(*ErrArgument)
-	_ = newErrTransport().(*ErrTransport)
-	_ = newErrMarshaler().(*ErrMarshaler)
+	_ = NewErrArgument().(*ErrArgument)
+	_ = NewErrTransport().(*ErrTransport)
+	_ = NewErrMarshaler().(*ErrMarshaler)
 
 	msg0 := ErrArgumentInvalid.(*ErrArgument).message
 	if "netchan: argument is invalid" != msg0 {
@@ -36,19 +36,19 @@ func TestErr(t *testing.T) {
 		t.Errorf("incorrect error message: expect %v, got %v", msg0, msg)
 	}
 
-	err = newErrTransport("hello")
+	err = NewErrTransport("hello")
 	msg = err.Error()
 	if "hello" != msg {
 		t.Errorf("incorrect error message: expect %v, got %v", "hello", msg)
 	}
 
-	err = newErrTransport(ErrArgumentInvalid)
+	err = NewErrTransport(ErrArgumentInvalid)
 	msg = err.Error()
 	if msg0 != msg {
 		t.Errorf("incorrect error message: expect %v, got %v", msg0, msg)
 	}
 
-	err = newErrTransport("hello", ErrArgumentInvalid)
+	err = NewErrTransport("hello", ErrArgumentInvalid)
 	msg = err.Error()
 	if "hello" != msg {
 		t.Errorf("incorrect error message: expect %v, got %v", "hello", msg)

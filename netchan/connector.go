@@ -56,7 +56,7 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 	case string:
 		uri, err = url.Parse(u)
 		if nil != err {
-			return newErrTransport(err)
+			return NewErrArgument(err)
 		}
 	case *url.URL:
 		uri = u
@@ -250,7 +250,7 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 }
 
 // DefaultConnector is the default Connector of the running process.
-// DefaultConnector is usually used via the Connect function.
+// Instead of DefaultConnector you can use the Connect function.
 var DefaultConnector Connector = NewConnector(DefaultTransport)
 
 // Connect connects a local channel to a remotely published channel.

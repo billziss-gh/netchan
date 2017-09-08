@@ -102,7 +102,7 @@ func (self *netLink) connect() (net.Conn, error) {
 			conn, err = tls.Dial("tcp", self.owner.uri.Host, self.owner.transport.tlscfg)
 		}
 		if nil != err {
-			return nil, newErrTransport(err)
+			return nil, NewErrTransport(err)
 		}
 
 		self.conn = conn
@@ -306,7 +306,7 @@ func (self *netTransport) Listen() error {
 			listen, err = tls.Listen("tcp", self.uri.Host, self.tlscfg)
 		}
 		if nil != err {
-			return newErrTransport(err)
+			return NewErrTransport(err)
 		}
 
 		self.listen = listen
@@ -409,7 +409,7 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 	if "" != port {
 		portnum, err := net.LookupPort("tcp", uri.Port())
 		if nil != err {
-			return nil, newErrTransport(err)
+			return nil, NewErrTransport(err)
 		}
 		port = strconv.Itoa(portnum)
 	} else {
@@ -421,7 +421,7 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 
 	hosts, err := net.LookupHost(uri.Hostname())
 	if nil != err {
-		return nil, newErrTransport(err)
+		return nil, NewErrTransport(err)
 	}
 
 	uri = &url.URL{

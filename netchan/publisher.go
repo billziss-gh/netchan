@@ -164,7 +164,7 @@ func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) 
 }
 
 // DefaultPublisher is the default Publisher of the running process.
-// DefaultPublisher is usually used via the Publish and Unpublish
+// Instead of DefaultPublisher you can use the Publish and Unpublish
 // functions.
 var DefaultPublisher Publisher = NewPublisher(DefaultTransport)
 
