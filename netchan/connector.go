@@ -28,16 +28,14 @@ type connector struct {
 	transport Transport
 	conmux    sync.RWMutex
 	conmap    map[Link]coninfo
-	chanset   map[interface{}]struct{}
-	wchanmap  *weakmap
+	conset    map[interface{}]struct{}
 }
 
 func newConnector(transport Transport) *connector {
 	self := &connector{
 		transport: transport,
 		conmap:    make(map[Link]coninfo),
-		chanset:   make(map[interface{}]struct{}),
-		wchanmap:  newWeakmap(),
+		conset:    make(map[interface{}]struct{}),
 	}
 	transport.SetChanDecoder(self)
 	transport.SetSender(self.sender)
@@ -90,7 +88,7 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 	defer self.conmux.Unlock()
 
 	ichan := vchan.Interface()
-	_, ok := self.chanset[ichan]
+	_, ok := self.conset[ichan]
 	if ok {
 		return ErrArgumentChanConnected
 	}
@@ -126,7 +124,7 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 		link.Open()
 	}
 
-	self.chanset[ichan] = struct{}{}
+	self.conset[ichan] = struct{}{}
 
 	return nil
 }
@@ -192,22 +190,21 @@ outer:
 }
 
 func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) error {
-	v := reflect.ValueOf(ichan).Elem()
-
 	var w weakref
 	copy(w[:], buf)
-
-	s := self.wchanmap.strongref(w, func() interface{} {
-		return reflect.MakeChan(v.Type(), 1).Interface()
-	})
-	if nil == s {
-		return ErrMarshalerRefInvalid
-	}
-
-	v.Set(reflect.ValueOf(s))
-
 	id := RefEncode(w)
-	self.connect(id, link, reflect.ValueOf(s), nil)
+
+	v := reflect.ValueOf(ichan).Elem()
+	u := reflect.MakeChan(v.Type(), 1)
+	v.Set(u)
+
+	/*
+	 * connect() may only return "chan is already connected" error,
+	 * which cannot happen in this scenario (because we always create
+	 * new channels with reflect.MakeChan()).
+	 */
+
+	self.connect(id, link, u, nil)
 
 	return nil
 }
