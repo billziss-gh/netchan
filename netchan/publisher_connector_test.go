@@ -65,7 +65,6 @@ func TestPublisherConnector(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -75,7 +74,6 @@ func TestPublisherConnector(t *testing.T) {
 
 func TestDefaultPublisherConnector(t *testing.T) {
 	testPublisherConnector(t, DefaultPublisher, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }
 
 func testPublisherConnectorUri(t *testing.T, publisher Publisher, connector Connector) {
@@ -116,7 +114,6 @@ func TestPublisherConnectorUri(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -208,7 +205,6 @@ func TestPublisherConnectorAnyAll(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -220,7 +216,6 @@ func TestPublisherConnectorAnyAll(t *testing.T) {
 func TestDefaultPublisherConnectorAnyAll(t *testing.T) {
 	testPublisherConnectorAnyAll(t, DefaultPublisher, DefaultConnector, "")
 	testPublisherConnectorAnyAll(t, DefaultPublisher, DefaultConnector, "+")
-	time.Sleep(100 * time.Millisecond)
 }
 
 func testPublisherConnectorError(t *testing.T,
@@ -286,7 +281,6 @@ func testPublisherConnectorError(t *testing.T,
 
 	publisher.Unpublish("one", pchan)
 
-	time.Sleep(100 * time.Millisecond)
 	transport.Close()
 	time.Sleep(100 * time.Millisecond)
 
@@ -377,7 +371,6 @@ func TestPublisherConnectorMulti(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -387,7 +380,6 @@ func TestPublisherConnectorMulti(t *testing.T) {
 
 func TestDefaultPublisherConnectorMulti(t *testing.T) {
 	testPublisherConnectorMulti(t, DefaultPublisher, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }
 
 func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, connector Connector) {
@@ -465,7 +457,6 @@ func TestPublisherConnectorMultiConcurrent(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -475,7 +466,6 @@ func TestPublisherConnectorMultiConcurrent(t *testing.T) {
 
 func TestDefaultPublisherConnectorMultiConcurrent(t *testing.T) {
 	testPublisherConnectorMultiConcurrent(t, DefaultPublisher, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }
 
 func testPublisherConnectorRoundtrip(t *testing.T, publisher Publisher, connector Connector) {
@@ -529,7 +519,6 @@ func TestPublisherConnectorRoundtrip(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -539,7 +528,6 @@ func TestPublisherConnectorRoundtrip(t *testing.T) {
 
 func TestDefaultPublisherConnectorRoundtrip(t *testing.T) {
 	testPublisherConnectorRoundtrip(t, DefaultPublisher, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }
 
 func testPublisherConnectorMultiConcurrentRoundtrip(
@@ -622,7 +610,6 @@ func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
 	publisher := newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -632,5 +619,4 @@ func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
 
 func TestDefaultPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
 	testPublisherConnectorMultiConcurrentRoundtrip(t, DefaultPublisher, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }

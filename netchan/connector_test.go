@@ -75,7 +75,6 @@ func TestConnector(t *testing.T) {
 	newPublisher(transport)
 	connector := newConnector(transport)
 	defer func() {
-		time.Sleep(100 * time.Millisecond)
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
@@ -85,5 +84,4 @@ func TestConnector(t *testing.T) {
 
 func TestDefaultConnector(t *testing.T) {
 	testConnector(t, DefaultConnector)
-	time.Sleep(100 * time.Millisecond)
 }
