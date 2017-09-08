@@ -113,8 +113,8 @@ func testTransport(t *testing.T, transport Transport, scheme string) {
 }
 
 func TestTcpTransport(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
@@ -131,8 +131,8 @@ func TestTlsTransport(t *testing.T) {
 		panic(err)
 	}
 
-	marshaler := newGobMarshaler()
-	transport := newNetTransportTLS(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransportTLS(
 		marshaler,
 		&url.URL{
 			Scheme: "tls",

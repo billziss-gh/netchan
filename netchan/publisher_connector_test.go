@@ -55,15 +55,15 @@ func testPublisherConnector(t *testing.T, publisher Publisher, connector Connect
 }
 
 func TestPublisherConnector(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
@@ -104,15 +104,15 @@ func testPublisherConnectorUri(t *testing.T, publisher Publisher, connector Conn
 }
 
 func TestPublisherConnectorUri(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
@@ -195,15 +195,15 @@ func testPublisherConnectorAnyAll(t *testing.T, publisher Publisher, connector C
 }
 
 func TestPublisherConnectorAnyAll(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
@@ -298,15 +298,15 @@ func testPublisherConnectorError(t *testing.T,
 }
 
 func TestPublisherConnectorError(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 	}()
 
@@ -361,15 +361,15 @@ func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Co
 }
 
 func TestPublisherConnectorMulti(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
@@ -447,15 +447,15 @@ func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, co
 }
 
 func TestPublisherConnectorMultiConcurrent(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
@@ -509,15 +509,15 @@ func testPublisherConnectorRoundtrip(t *testing.T, publisher Publisher, connecto
 }
 
 func TestPublisherConnectorRoundtrip(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
@@ -600,15 +600,15 @@ func testPublisherConnectorMultiConcurrentRoundtrip(
 }
 
 func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	connector := newConnector(transport)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)

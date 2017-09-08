@@ -65,15 +65,15 @@ func testConnector(t *testing.T, connector Connector) {
 }
 
 func TestConnector(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	newPublisher(transport)
-	connector := newConnector(transport)
+	NewPublisher(transport)
+	connector := NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)

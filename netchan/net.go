@@ -247,11 +247,11 @@ type netTransport struct {
 	mlink     map[string]*netMultiLink
 }
 
-func newNetTransport(marshaler Marshaler, uri *url.URL) *netTransport {
-	return newNetTransportTLS(marshaler, uri, nil)
+func NewNetTransport(marshaler Marshaler, uri *url.URL) Transport {
+	return NewNetTransportTLS(marshaler, uri, nil)
 }
 
-func newNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) *netTransport {
+func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) Transport {
 	if nil != tlscfg {
 		tlscfg = tlscfg.Clone()
 	}
@@ -441,7 +441,7 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 	return mlink, nil
 }
 
-var _ Transport = RegisterTransport("tcp", newNetTransport(
+var _ Transport = RegisterTransport("tcp", NewNetTransport(
 	DefaultMarshaler,
 	&url.URL{
 		Scheme: "tcp",

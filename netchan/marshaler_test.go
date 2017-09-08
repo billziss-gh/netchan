@@ -77,7 +77,7 @@ type testData struct {
 func TestGobMarshaler(t *testing.T) {
 	coder := &testMarshalerCoder{newWeakmap()}
 
-	marshaler := newGobMarshaler()
+	marshaler := NewGobMarshaler()
 	marshaler.SetChanEncoder(coder)
 	marshaler.SetChanDecoder(coder)
 

@@ -31,7 +31,7 @@ type publisher struct {
 	wchanmap  *weakmap
 }
 
-func newPublisher(transport Transport) *publisher {
+func NewPublisher(transport Transport) Publisher {
 	self := &publisher{
 		transport: transport,
 		pubmap:    make(map[string]pubinfo),
@@ -161,7 +161,7 @@ func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) 
 	return w[:], nil
 }
 
-var DefaultPublisher Publisher = newPublisher(DefaultTransport)
+var DefaultPublisher Publisher = NewPublisher(DefaultTransport)
 var IdErr = "+err/"
 var strBroadcast = "+"
 var errType = reflect.TypeOf((*error)(nil)).Elem()

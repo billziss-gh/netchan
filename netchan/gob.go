@@ -24,7 +24,7 @@ type gobMarshaler struct {
 	chanDec ChanDecoder
 }
 
-func newGobMarshaler() *gobMarshaler {
+func NewGobMarshaler() Marshaler {
 	return &gobMarshaler{}
 }
 

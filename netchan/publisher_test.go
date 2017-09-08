@@ -41,15 +41,15 @@ func testPublisher(t *testing.T, publisher Publisher) {
 }
 
 func TestPublisher(t *testing.T) {
-	marshaler := newGobMarshaler()
-	transport := newNetTransport(
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
 		marshaler,
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
 		})
-	publisher := newPublisher(transport)
-	newConnector(transport)
+	publisher := NewPublisher(transport)
+	NewConnector(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)

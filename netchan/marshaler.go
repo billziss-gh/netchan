@@ -16,7 +16,7 @@ import (
 	"encoding/base64"
 )
 
-var DefaultMarshaler Marshaler = newGobMarshaler()
+var DefaultMarshaler Marshaler = NewGobMarshaler()
 
 func RefEncode(w weakref) string {
 	return "(" + base64.RawURLEncoding.EncodeToString(w[:]) + ")"

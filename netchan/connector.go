@@ -31,7 +31,7 @@ type connector struct {
 	lnkmap    map[interface{}]Link
 }
 
-func newConnector(transport Transport) *connector {
+func NewConnector(transport Transport) Connector {
 	self := &connector{
 		transport: transport,
 		conmap:    make(map[Link]coninfo),
@@ -247,7 +247,7 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	return nil
 }
 
-var DefaultConnector Connector = newConnector(DefaultTransport)
+var DefaultConnector Connector = NewConnector(DefaultTransport)
 
 // Connect uses the DefaultConnector and
 // connects a local channel to a remote channel that is addressed by uri. The uri
