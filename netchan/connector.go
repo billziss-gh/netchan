@@ -28,14 +28,14 @@ type connector struct {
 	transport Transport
 	conmux    sync.RWMutex
 	conmap    map[Link]coninfo
-	conset    map[interface{}]struct{}
+	lnkmap    map[interface{}]Link
 }
 
 func newConnector(transport Transport) *connector {
 	self := &connector{
 		transport: transport,
 		conmap:    make(map[Link]coninfo),
-		conset:    make(map[interface{}]struct{}),
+		lnkmap:    make(map[interface{}]Link),
 	}
 	transport.SetChanDecoder(self)
 	transport.SetSender(self.sender)
@@ -58,27 +58,34 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 		}
 	case *url.URL:
 		uri = u
+	case nil:
+		uri = nil
 	default:
 		panic(ErrArgumentInvalid)
 	}
 
-	id, link, err := self.transport.Connect(uri)
-	if nil != err {
-		return err
-	}
+	var id string
+	var link Link
+	if nil != uri {
+		var err error
+		id, link, err = self.transport.Connect(uri)
+		if nil != err {
+			return err
+		}
 
-	/*
-	 * At this point Transport.Connect() has allocated a link and may have allocated
-	 * additional resources. Ideally we would not want the connect() operation below
-	 * to fail. Unfortunately there is still the possibility of getting an already
-	 * connected channel, which we must treat as an error.
-	 *
-	 * Although we could check for that possibility before the Transport.Connect()
-	 * call, to do this without race conditions we would have to hold the conmux lock
-	 * over Transport.Connect() which is a potentially slow call. So we choose the
-	 * least worse evil, which is to sometimes fail the connect() operation after a
-	 * successful Transport.Connect().
-	 */
+		/*
+		 * At this point Transport.Connect() has allocated a link and may have allocated
+		 * additional resources. Ideally we would not want the connect() operation below
+		 * to fail. Unfortunately there is still the possibility of getting an already
+		 * connected channel, which we must treat as an error.
+		 *
+		 * Although we could check for that possibility before the Transport.Connect()
+		 * call, to do this without race conditions we would have to hold the conmux lock
+		 * over Transport.Connect() which is a potentially slow call. So we choose the
+		 * least worse evil, which is to sometimes fail the connect() operation after a
+		 * successful Transport.Connect().
+		 */
+	}
 
 	return self.connect(id, link, vchan, echan)
 }
@@ -88,16 +95,21 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 	defer self.conmux.Unlock()
 
 	ichan := vchan.Interface()
-	_, ok := self.conset[ichan]
+	oldlink, ok := self.lnkmap[ichan]
 	if ok {
-		return ErrArgumentChanConnected
+		if nil != link {
+			return ErrArgumentChanConnected
+		}
+
+		link = oldlink
 	}
 
 	info := self.conmap[link]
 	found := false
-	for _, s := range info.slist {
+	for i, s := range info.slist {
 		if s.Chan == vchan {
 			found = true
+			info.elist[i] = echan
 			break
 		}
 	}
@@ -122,9 +134,12 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 		info.slist[0].Chan.Send(reflect.ValueOf(struct{}{}))
 
 		link.Open()
+	} else {
+		self.conmap[link] = info
+		info.slist[0].Chan.Send(reflect.ValueOf(struct{}{}))
 	}
 
-	self.conset[ichan] = struct{}{}
+	self.lnkmap[ichan] = link
 
 	return nil
 }

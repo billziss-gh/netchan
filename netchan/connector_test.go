@@ -20,7 +20,6 @@ import (
 
 func testConnector(t *testing.T, connector Connector) {
 	ichan := make(chan bool)
-	echan := make(chan error)
 
 	err := connector.Connect(
 		&url.URL{
@@ -29,7 +28,7 @@ func testConnector(t *testing.T, connector Connector) {
 			Path:   "one",
 		},
 		ichan,
-		echan)
+		nil)
 	if nil != err {
 		panic(err)
 	}
@@ -41,9 +40,17 @@ func testConnector(t *testing.T, connector Connector) {
 			Path:   "one",
 		},
 		ichan,
-		echan)
+		nil)
 	if nil == err {
 		t.Error("unexpected nil error")
+	}
+
+	err = connector.Connect(
+		nil,
+		ichan,
+		make(chan error))
+	if nil != err {
+		panic(err)
 	}
 
 	close(ichan)
