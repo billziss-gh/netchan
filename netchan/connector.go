@@ -28,14 +28,16 @@ type connector struct {
 	transport Transport
 	conmux    sync.RWMutex
 	conmap    map[Link]coninfo
-	chanmap   *weakmap
+	chanset   map[interface{}]struct{}
+	wchanmap  *weakmap
 }
 
 func newConnector(transport Transport) *connector {
 	self := &connector{
 		transport: transport,
 		conmap:    make(map[Link]coninfo),
-		chanmap:   newWeakmap(),
+		chanset:   make(map[interface{}]struct{}),
+		wchanmap:  newWeakmap(),
 	}
 	transport.SetChanDecoder(self)
 	transport.SetSender(self.sender)
@@ -67,16 +69,31 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 		return err
 	}
 
-	// It is a programmatic error to Connect the same channel multiple times.
+	/*
+	 * At this point Transport.Connect() has allocated a link and may have allocated
+	 * additional resources. Ideally we would not want the connect() operation below
+	 * to fail. Unfortunately there is still the possibility of getting an already
+	 * connected channel, which we must treat as an error.
+	 *
+	 * Although we could check for that possibility before the Transport.Connect()
+	 * call, to do this without race conditions we would have to hold the conmux lock
+	 * over Transport.Connect() which is a potentially slow call. So we choose the
+	 * least worse evil, which is to sometimes fail the connect() operation after a
+	 * successful Transport.Connect().
+	 */
 
-	self.connect(id, link, vchan, echan)
-
-	return nil
+	return self.connect(id, link, vchan, echan)
 }
 
-func (self *connector) connect(id string, link Link, vchan reflect.Value, echan chan error) {
+func (self *connector) connect(id string, link Link, vchan reflect.Value, echan chan error) error {
 	self.conmux.Lock()
 	defer self.conmux.Unlock()
+
+	ichan := vchan.Interface()
+	_, ok := self.chanset[ichan]
+	if ok {
+		return ErrArgumentChanConnected
+	}
 
 	info := self.conmap[link]
 	found := false
@@ -108,6 +125,10 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 
 		link.Open()
 	}
+
+	self.chanset[ichan] = struct{}{}
+
+	return nil
 }
 
 func (self *connector) disconnect(link Link, vchan reflect.Value) {
@@ -176,7 +197,7 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	var w weakref
 	copy(w[:], buf)
 
-	s := self.chanmap.strongref(w, func() interface{} {
+	s := self.wchanmap.strongref(w, func() interface{} {
 		return reflect.MakeChan(v.Type(), 1).Interface()
 	})
 	if nil == s {

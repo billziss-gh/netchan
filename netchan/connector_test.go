@@ -34,6 +34,18 @@ func testConnector(t *testing.T, connector Connector) {
 		panic(err)
 	}
 
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.2",
+			Path:   "one",
+		},
+		ichan,
+		echan)
+	if nil == err {
+		t.Error("unexpected nil error")
+	}
+
 	close(ichan)
 }
 
