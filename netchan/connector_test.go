@@ -41,8 +41,8 @@ func testConnector(t *testing.T, connector Connector) {
 		},
 		ichan,
 		nil)
-	if nil == err {
-		t.Error("unexpected nil error")
+	if ErrArgumentConnected != err {
+		t.Errorf("incorrect error: expect %v, got %v", ErrArgumentConnected, err)
 	}
 
 	err = connector.Connect(
@@ -51,6 +51,14 @@ func testConnector(t *testing.T, connector Connector) {
 		make(chan error))
 	if nil != err {
 		panic(err)
+	}
+
+	err = connector.Connect(
+		nil,
+		make(chan int),
+		make(chan error))
+	if ErrArgumentNotConnected != err {
+		t.Errorf("incorrect error: expect %v, got %v", ErrArgumentNotConnected, err)
 	}
 
 	close(ichan)

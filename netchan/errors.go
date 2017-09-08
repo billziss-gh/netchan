@@ -89,7 +89,8 @@ func newErrMarshaler(args ...interface{}) error {
 
 var (
 	ErrArgumentInvalid         error = newErrArgument("netchan: argument is invalid")
-	ErrArgumentChanConnected   error = newErrArgument("netchan: argument chan is already connected")
+	ErrArgumentConnected       error = newErrArgument("netchan: argument chan is connected")
+	ErrArgumentNotConnected    error = newErrArgument("netchan: argument chan is not connected")
 	ErrTransportInvalid        error = newErrTransport("netchan: transport is invalid")
 	ErrTransportClosed         error = newErrTransport("netchan: transport is closed")
 	ErrTransportMessageCorrupt error = newErrTransport("netchan: transport message is corrupt")
