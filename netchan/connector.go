@@ -216,7 +216,9 @@ outer:
 					}
 
 					func() {
-						defer recover()
+						defer func() {
+							recover()
+						}()
 						elist[i] <- err
 					}()
 				}

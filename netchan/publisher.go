@@ -134,7 +134,9 @@ func (self *publisher) recver(link Link) error {
 
 			for i := range vlist {
 				ok := func() (ok bool) {
-					defer recover()
+					defer func() {
+						recover()
+					}()
 					vlist[(i+index)%len(vlist)].Send(vmsg)
 					ok = true
 					return
