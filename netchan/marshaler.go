@@ -19,11 +19,11 @@ import (
 // DefaultMarshaler is the default Marshaler of the running process.
 var DefaultMarshaler Marshaler = NewGobMarshaler()
 
-func RefEncode(w weakref) string {
+func refEncode(w weakref) string {
 	return "(" + base64.RawURLEncoding.EncodeToString(w[:]) + ")"
 }
 
-func RefDecode(s string) (weakref, bool) {
+func refDecode(s string) (weakref, bool) {
 	if 2 < len(s) && '(' == s[0] && ')' == s[len(s)-1] {
 		var w weakref
 		_, err := base64.RawURLEncoding.Decode(w[:], []byte(s[1:len(s)-1]))

@@ -116,7 +116,7 @@ func (self *publisher) recver(link Link) error {
 		}
 
 		var vlist []reflect.Value
-		if w, ok := RefDecode(id); ok {
+		if w, ok := refDecode(id); ok {
 			ichan := self.wchanmap.strongref(w, nil)
 			if nil != ichan {
 				vlist = append(vlist, reflect.ValueOf(ichan))

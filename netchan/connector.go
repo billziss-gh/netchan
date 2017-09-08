@@ -232,7 +232,7 @@ outer:
 func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) error {
 	var w weakref
 	copy(w[:], buf)
-	id := RefEncode(w)
+	id := refEncode(w)
 
 	v := reflect.ValueOf(ichan).Elem()
 	u := reflect.MakeChan(v.Type(), 1)
