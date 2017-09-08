@@ -24,6 +24,8 @@ type gobMarshaler struct {
 	chanDec ChanDecoder
 }
 
+// NewGobMarshaler creates a new Marshaler that uses the netgob format
+// for encoding/decoding.
 func NewGobMarshaler() Marshaler {
 	return &gobMarshaler{}
 }

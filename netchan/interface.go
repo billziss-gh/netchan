@@ -39,8 +39,7 @@
 //
 // To receive publish errors one can publish error channels (of type chan
 // error) under the special broadcast ID "+err/". All such error channels
-// will receive transport errors, etc. [The special broadcast ID "+err/" is
-// local to the running process and cannot be remoted.]
+// will receive transport errors, etc.
 //
 // Connecting a channel
 //
@@ -89,62 +88,95 @@ import (
 	"reflect"
 )
 
-// Err is implemented by all errors reported by this library.
+// Err is implemented by errors reported by this package.
 type Err interface {
 	error
 
-	// Nested returns the original error that is the cause of this error. May be nil.
+	// Nested returns the original error that is the cause of this error.
+	// May be nil.
 	Nested() error
 
-	// Chan returns a channel that is associated with this error. May be nil.
+	// Chan returns a channel that is associated with this error.
+	// May be nil.
 	Chan() interface{}
 }
 
-// Publisher is used to associate a channel with an id and make the channel publicly accessible.
+// Publisher is used to publish and unpublish channels.
 type Publisher interface {
-	// Publish publishes a channel under an id. Multiple channels may be published under the same
-	// id. When a channel is published, it becomes publicly accessible and may receive messages
-	// over a network.
+	// Publish publishes a channel under an ID. Publishing a channel
+	// associates it with the ID and makes it available to receive
+	// messages.
 	//
-	// Messages that target a specific id may be unicast (delivered to a single associated
-	// channel) or broadcast (delivered to all the associated channels). Id's that start with the
-	// character '+' are broadcast id's, all other id's are unicast id's.
+	// If multiple channels are published under the same ID which
+	// channel(s) receive a message depends on the ID. ID's that start
+	// with a '+' character are considered "broadcast" ID's and messages
+	// sent to them are delivered to all channels published under that
+	// ID. All other ID's are considered "unicast" and messages sent to
+	// them are delivered to a single channel published under that ID
+	// (determined using a pseudo-random algorithm).
 	//
-	// The special broadcast id IdErr may be used to publish an error channel (type: chan error)
-	// that will receive Publisher network errors.
+	// To receive publish errors one can publish error channels (of type
+	// chan error) under the special broadcast ID "+err/". All such error
+	// channels will receive transport errors, etc. This special broadcast
+	// ID is local to the running process and cannot be accessed remotely.
 	Publish(id string, ichan interface{}) error
 
-	// Unpublish disassociates a channel from an id.
+	// Unpublish unpublishes a channel. It disassociates it from the ID
+	// and makes it unavailable to receive messages under that ID.
 	Unpublish(id string, ichan interface{})
 }
 
-// Connector is used to connect a local channel to a remote channel.
+// Connector is used to connect a local channel to a remotely published
+// channel.
 type Connector interface {
-	// Connect connects a local channel to a remote channel that is addressed by uri. The uri
-	// depends on the underlying network transport and may contain addressing and id information.
+	// Connect connects a local channel to a remotely published channel.
+	// After the connection is established, the connected channel may be
+	// used to send messages to the remote channel.
 	//
-	// The uri may be of type string or *url.URL. An error channel (type: chan error) may be
-	// supplied as well; it will receive Connector network errors.
+	// Remotely published channels may be addressed by URI's. The URI
+	// syntax depends on the underlying transport. For the default TCP
+	// transport an address has the syntax: tcp://HOST[:PORT]/ID
+	//
+	// The uri parameter contains the URI and can be of type string or
+	// *url.URL. An error channel (of type chan error) may also be
+	// specified. This error channel will receive transport errors, etc.
+	// related to the connected channel.
+	//
+	// It is also possible to associate a new error channel with an
+	// already connected channel. For this purpose use a nil uri and
+	// the new error channel to associate with the connected channel.
+	//
+	// To disconnect a connected channel simply close it.
 	Connect(uri interface{}, ichan interface{}, echan chan error) error
 }
 
-// Link is used to provide network transport support to publishers and connectors.
-// A link encapsulates a network transport connection between two hosts.
+// Link encapsulates a network transport link between two machines.
+// It is used to send and receive messages between machines.
+//
+// Link is useful to users implementing a new Transport.
 type Link interface {
 	Open()
 	Recv() (id string, vmsg reflect.Value, err error)
 	Send(id string, vmsg reflect.Value) (err error)
 }
 
+// ChanEncoder is used to encode a channel as a marshaling reference.
+//
+// ChanEncoder is useful to users implementing a new Marshaler.
 type ChanEncoder interface {
 	ChanEncode(link Link, ichan interface{}) ([]byte, error)
 }
 
+// ChanDecoder is used to decode a marshaling reference into a channel.
+//
+// ChanDecoder is useful to users implementing a new Marshaler.
 type ChanDecoder interface {
 	ChanDecode(link Link, ichan interface{}, buf []byte) error
 }
 
-// Transport is used to provide network transport support to publishers and connectors.
+// Transport is used to transport messages over a network.
+//
+// Transport is useful to users implementing a new network transport.
 type Transport interface {
 	SetChanEncoder(chanEnc ChanEncoder)
 	SetChanDecoder(chanDec ChanDecoder)
@@ -155,7 +187,10 @@ type Transport interface {
 	Close()
 }
 
-// Marshaler is used to provide message encoding/decoding support to publishers and connectors.
+// Marshaler is used to encode/decode messages for transporting over a
+// network.
+//
+// Marshaler is useful to users implementing a new marshaling layer.
 type Marshaler interface {
 	RegisterType(val interface{})
 	SetChanEncoder(chanEnc ChanEncoder)

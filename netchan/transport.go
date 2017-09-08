@@ -182,12 +182,15 @@ func (self *defaultTransport) unregisterTransport(scheme string) Transport {
 	return transport
 }
 
+// DefaultTransport is the default Transport of the running process.
 var DefaultTransport Transport = newDefaultTransport()
 
+// RegisterTransport associates a URI scheme with a network transport.
 func RegisterTransport(scheme string, transport Transport) Transport {
 	return DefaultTransport.(*defaultTransport).registerTransport(scheme, transport)
 }
 
+// UnregisterTransport disassociates a URI scheme from a network transport.
 func UnregisterTransport(scheme string) Transport {
 	return DefaultTransport.(*defaultTransport).unregisterTransport(scheme)
 }

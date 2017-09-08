@@ -54,7 +54,8 @@ func (err *errData) Chan() interface{} {
 	return err.ichan
 }
 
-// Function/method argument errors.
+// ErrArgument encapsulates a function/method argument error.
+// ErrArgument implements the Err interface.
 type ErrArgument struct {
 	errData
 }
@@ -65,7 +66,8 @@ func newErrArgument(args ...interface{}) error {
 	return err
 }
 
-// Network transport errors.
+// ErrTransport encapsulates a network transport error.
+// ErrTransport implements the Err interface.
 type ErrTransport struct {
 	errData
 }
@@ -76,7 +78,8 @@ func newErrTransport(args ...interface{}) error {
 	return err
 }
 
-// Message encoding/decoding errors.
+// ErrMarshaler encapsulates a message encoding/decoding error.
+// ErrMarshaler implements the Err interface.
 type ErrMarshaler struct {
 	errData
 }
@@ -87,6 +90,8 @@ func newErrMarshaler(args ...interface{}) error {
 	return err
 }
 
+// Errors reports by this package. Other errors are also possible.
+// All errors reported implement the Err interface.
 var (
 	ErrArgumentInvalid         error = newErrArgument("netchan: argument is invalid")
 	ErrArgumentConnected       error = newErrArgument("netchan: argument chan is connected")

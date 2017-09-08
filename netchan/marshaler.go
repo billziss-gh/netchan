@@ -16,6 +16,7 @@ import (
 	"encoding/base64"
 )
 
+// DefaultMarshaler is the default Marshaler of the running process.
 var DefaultMarshaler Marshaler = NewGobMarshaler()
 
 func RefEncode(w weakref) string {

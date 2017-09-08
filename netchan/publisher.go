@@ -31,6 +31,8 @@ type publisher struct {
 	wchanmap  *weakmap
 }
 
+// NewPublisher creates a new Publisher that can be used to publish
+// channels. It is usually sufficient to use the DefaultPublisher instead.
 func NewPublisher(transport Transport) Publisher {
 	self := &publisher{
 		transport: transport,
@@ -161,28 +163,44 @@ func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) 
 	return w[:], nil
 }
 
+// DefaultPublisher is the default Publisher of the running process.
+// DefaultPublisher is usually used via the Publish and Unpublish
+// functions.
 var DefaultPublisher Publisher = NewPublisher(DefaultTransport)
+
+// IdErr contains the special error broadcast ID. This special broadcast
+// ID is local to the running process and cannot be accessed remotely.
 var IdErr = "+err/"
+
 var strBroadcast = "+"
 var errType = reflect.TypeOf((*error)(nil)).Elem()
 
-// Publish uses the DefaultPublisher and
-// publishes a channel under an id. Multiple channels may be published under the same
-// id. When a channel is published, it becomes publicly accessible and may receive messages
-// over a network.
+// Publish publishes a channel under an ID. Publishing a channel
+// associates it with the ID and makes it available to receive
+// messages.
 //
-// Messages that target a specific id may be unicast (delivered to a single associated
-// channel) or broadcast (delivered to all the associated channels). Id's that start with the
-// character '+' are broadcast id's, all other id's are unicast id's.
+// If multiple channels are published under the same ID which
+// channel(s) receive a message depends on the ID. ID's that start
+// with a '+' character are considered "broadcast" ID's and messages
+// sent to them are delivered to all channels published under that
+// ID. All other ID's are considered "unicast" and messages sent to
+// them are delivered to a single channel published under that ID
+// (determined using a pseudo-random algorithm).
 //
-// The special broadcast id IdErr may be used to publish an error channel (type: chan error)
-// that will receive Publisher network errors.
+// To receive publish errors one can publish error channels (of type
+// chan error) under the special broadcast ID "+err/". All such error
+// channels will receive transport errors, etc. This special broadcast
+// ID is local to the running process and cannot be accessed remotely.
+//
+// Publish publishes a channel with the DefaultPublisher.
 func Publish(id string, ichan interface{}) error {
 	return DefaultPublisher.Publish(id, ichan)
 }
 
-// Unpublish uses the DefaultPublisher and
-// disassociates a channel from an id using the DefaultPublisher.
+// Unpublish unpublishes a channel. It disassociates it from the ID
+// and makes it unavailable to receive messages under that ID.
+//
+// Unpublish unpublishes a channel from the DefaultPublisher.
 func Unpublish(id string, ichan interface{}) {
 	DefaultPublisher.Unpublish(id, ichan)
 }

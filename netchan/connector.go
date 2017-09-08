@@ -31,6 +31,8 @@ type connector struct {
 	lnkmap    map[interface{}]Link
 }
 
+// NewConnector creates a new Connector that can be used to connect
+// channels. It is usually sufficient to use the DefaultConnector instead.
 func NewConnector(transport Transport) Connector {
 	self := &connector{
 		transport: transport,
@@ -247,14 +249,30 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	return nil
 }
 
+// DefaultConnector is the default Connector of the running process.
+// DefaultConnector is usually used via the Connect function.
 var DefaultConnector Connector = NewConnector(DefaultTransport)
 
-// Connect uses the DefaultConnector and
-// connects a local channel to a remote channel that is addressed by uri. The uri
-// depends on the underlying network transport and may contain addressing and id information.
+// Connect connects a local channel to a remotely published channel.
+// After the connection is established, the connected channel may be
+// used to send messages to the remote channel.
 //
-// The uri may be of type string or *url.URL. An error channel (type: chan error) may be
-// supplied as well; it will receive Connector network errors.
+// Remotely published channels may be addressed by URI's. The URI
+// syntax depends on the underlying transport. For the default TCP
+// transport an address has the syntax: tcp://HOST[:PORT]/ID
+//
+// The uri parameter contains the URI and can be of type string or
+// *url.URL. An error channel (of type chan error) may also be
+// specified. This error channel will receive transport errors, etc.
+// related to the connected channel.
+//
+// It is also possible to associate a new error channel with an
+// already connected channel. For this purpose use a nil uri and
+// the new error channel to associate with the connected channel.
+//
+// To disconnect a connected channel simply close it.
+//
+// Connect connects a channel using the DefaultConnector.
 func Connect(uri interface{}, ichan interface{}, echan chan error) error {
 	return DefaultConnector.Connect(uri, ichan, echan)
 }

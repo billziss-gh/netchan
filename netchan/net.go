@@ -247,10 +247,14 @@ type netTransport struct {
 	mlink     map[string]*netMultiLink
 }
 
+// NewNetTransport creates a new TCP Transport. The URI to listen to
+// should have the syntax tcp://[HOST]:PORT.
 func NewNetTransport(marshaler Marshaler, uri *url.URL) Transport {
 	return NewNetTransportTLS(marshaler, uri, nil)
 }
 
+// NewNetTransportTLS creates a new TLS Transport. The URI to listen to
+// should have the syntax tls://[HOST]:PORT.
 func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) Transport {
 	if nil != tlscfg {
 		tlscfg = tlscfg.Clone()
