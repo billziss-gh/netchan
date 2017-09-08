@@ -313,6 +313,56 @@ func TestPublisherConnectorError(t *testing.T) {
 	testPublisherConnectorError(t, transport, publisher, connector)
 }
 
+func testPublisherConnectorCloseRecv(t *testing.T, publisher Publisher, connector Connector) {
+	pchan := make(chan string)
+	cchan := make(chan string)
+	echan := make(chan error)
+
+	err := publisher.Publish("one", pchan)
+	if nil != err {
+		panic(err)
+	}
+
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.1",
+			Path:   "one",
+		},
+		cchan,
+		echan)
+	if nil != err {
+		panic(err)
+	}
+
+	cchan <- "fortytwo"
+
+	close(cchan)
+	close(pchan)
+
+	time.Sleep(100 * time.Millisecond)
+
+	publisher.Unpublish("one", pchan)
+}
+
+func TestPublisherConnectorCloseRecv(t *testing.T) {
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testPublisherConnectorCloseRecv(t, publisher, connector)
+}
+
 func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
