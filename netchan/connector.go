@@ -119,15 +119,7 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 	}
 
 	if !found {
-		if nil == info.slist {
-			info.slist = append(info.slist,
-				reflect.SelectCase{
-					Dir:  reflect.SelectRecv,
-					Chan: reflect.ValueOf(make(chan struct{}, 0x7fffffff)),
-				})
-			info.ilist = append(info.ilist, "")
-			info.elist = append(info.elist, nil)
-		}
+		self.addsigchan(&info)
 
 		info.slist = append(info.slist,
 			reflect.SelectCase{Dir: reflect.SelectRecv, Chan: vchan})
@@ -166,7 +158,25 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	}
 }
 
+func (self *connector) addsigchan(info *coninfo) {
+	if nil == info.slist {
+		info.slist = append(info.slist,
+			reflect.SelectCase{
+				Dir:  reflect.SelectRecv,
+				Chan: reflect.ValueOf(make(chan struct{}, 0x7fffffff)),
+			})
+		info.ilist = append(info.ilist, "")
+		info.elist = append(info.elist, nil)
+	}
+}
+
 func (self *connector) sender(link Link) error {
+	self.conmux.Lock()
+	info := self.conmap[link]
+	self.addsigchan(&info)
+	self.conmap[link] = info
+	self.conmux.Unlock()
+
 outer:
 	for {
 		// make a copy so that we can safely use it outside the read lock
@@ -180,6 +190,15 @@ outer:
 		for {
 			i, vmsg, ok := reflect.Select(slist)
 			if 0 == i {
+				sigchan := slist[0].Chan.Interface().(chan struct{})
+			drain:
+				for {
+					select {
+					case <-sigchan:
+					default:
+						break drain
+					}
+				}
 				continue outer
 			}
 			if !ok {

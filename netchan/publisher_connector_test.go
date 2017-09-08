@@ -477,3 +477,160 @@ func TestDefaultPublisherConnectorMultiConcurrent(t *testing.T) {
 	testPublisherConnectorMultiConcurrent(t, DefaultPublisher, DefaultConnector)
 	time.Sleep(100 * time.Millisecond)
 }
+
+func testPublisherConnectorRoundtrip(t *testing.T, publisher Publisher, connector Connector) {
+	pchan := make(chan chan string)
+	cchan := make(chan chan string)
+	echan := make(chan error)
+
+	err := publisher.Publish("one", pchan)
+	if nil != err {
+		panic(err)
+	}
+
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.1",
+			Path:   "one",
+		},
+		cchan,
+		echan)
+	if nil != err {
+		panic(err)
+	}
+
+	cch := make(chan string)
+	cchan <- cch
+
+	close(cchan)
+
+	pch := <-pchan
+	pch <- "fortytwo"
+
+	close(pch)
+
+	s := <-cch
+	if "fortytwo" != s {
+		t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
+	}
+
+	publisher.Unpublish("one", pchan)
+}
+
+func TestPublisherConnectorRoundtrip(t *testing.T) {
+	marshaler := newGobMarshaler()
+	transport := newNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	publisher := newPublisher(transport)
+	connector := newConnector(transport)
+	defer func() {
+		time.Sleep(100 * time.Millisecond)
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testPublisherConnectorRoundtrip(t, publisher, connector)
+}
+
+func TestDefaultPublisherConnectorRoundtrip(t *testing.T) {
+	testPublisherConnectorRoundtrip(t, DefaultPublisher, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
+}
+
+func testPublisherConnectorMultiConcurrentRoundtrip(
+	t *testing.T, publisher Publisher, connector Connector) {
+	pchan := make([]chan chan string, 100)
+	cchan := make([]chan chan string, 100)
+	echan := make(chan error)
+
+	for i := range pchan {
+		pchan[i] = make(chan chan string)
+
+		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
+		if nil != err {
+			panic(err)
+		}
+	}
+
+	for i := range cchan {
+		cchan[i] = make(chan chan string)
+
+		err := connector.Connect(
+			&url.URL{
+				Scheme: "tcp",
+				Host:   "127.0.0.1",
+				Path:   "chan" + strconv.Itoa(i),
+			},
+			cchan[i],
+			echan)
+		if nil != err {
+			panic(err)
+		}
+	}
+
+	wg := sync.WaitGroup{}
+
+	for i := range cchan {
+		i := i
+		wg.Add(1)
+		go func() {
+			ch := make(chan string)
+			cchan[i] <- ch
+			s := <-ch
+			if "msg"+strconv.Itoa(i) != s {
+				t.Errorf("incorrect msg: expect %v, got %v", "msg"+strconv.Itoa(i), s)
+			}
+			wg.Done()
+		}()
+	}
+
+	for i := range pchan {
+		i := i
+		wg.Add(1)
+		go func() {
+			ch := <-pchan[i]
+			ch <- "msg" + strconv.Itoa(i)
+			close(ch)
+			wg.Done()
+		}()
+	}
+
+	wg.Wait()
+
+	for i := range cchan {
+		close(cchan[i])
+	}
+
+	for i := range pchan {
+		publisher.Unpublish("chan"+strconv.Itoa(i), pchan[i])
+	}
+}
+
+func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
+	marshaler := newGobMarshaler()
+	transport := newNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		})
+	publisher := newPublisher(transport)
+	connector := newConnector(transport)
+	defer func() {
+		time.Sleep(100 * time.Millisecond)
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testPublisherConnectorMultiConcurrentRoundtrip(t, publisher, connector)
+}
+
+func TestDefaultPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
+	testPublisherConnectorMultiConcurrentRoundtrip(t, DefaultPublisher, DefaultConnector)
+	time.Sleep(100 * time.Millisecond)
+}
