@@ -110,7 +110,13 @@ func (self *publisher) recver(link Link) error {
 	pubrnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for {
+		if nil != debugLog {
+			debugLog("%v Recv()", link)
+		}
 		id, vmsg, err := link.Recv()
+		if nil != debugLog {
+			debugLog("%v Recv = (id=%#v, vmsg=%#v, err=%#v)", link, id, vmsg, err)
+		}
 		if nil != err {
 			id, vmsg = IdErr, reflect.ValueOf(err)
 		}

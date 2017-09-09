@@ -14,6 +14,7 @@ package netchan
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net"
 	"net/url"
 	"reflect"
@@ -191,7 +192,12 @@ func (self *netLink) sender() {
 	self.reset(true)
 }
 
+func (self *netLink) String() string {
+	return self.owner.linkString(self)
+}
+
 var _ Link = (*netLink)(nil)
+var _ fmt.Stringer = (*netLink)(nil)
 
 type netMultiLink struct {
 	transport *netTransport
@@ -233,6 +239,16 @@ func (self *netMultiLink) accept(conn net.Conn) *netLink {
 func (self *netMultiLink) choose() *netLink {
 	index := int(atomic.AddUint32(&self.index, +1))
 	return self.link[index%len(self.link)]
+}
+
+func (self *netMultiLink) linkString(link *netLink) string {
+	for i, l := range self.link {
+		if l == link {
+			return fmt.Sprintf("%v[%v]", self.uri, i)
+		}
+	}
+
+	return fmt.Sprintf("%v[?]", self.uri)
 }
 
 type netTransport struct {
