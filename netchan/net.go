@@ -24,6 +24,22 @@ import (
 	"sync/atomic"
 )
 
+func netDial(address string, tlscfg *tls.Config) (net.Conn, error) {
+	if nil == tlscfg {
+		return net.Dial("tcp", address)
+	} else {
+		return tls.Dial("tcp", address, tlscfg)
+	}
+}
+
+func netListen(address string, tlscfg *tls.Config) (net.Listener, error) {
+	if nil == tlscfg {
+		return net.Listen("tcp", address)
+	} else {
+		return tls.Listen("tcp", address, tlscfg)
+	}
+}
+
 type netLink struct {
 	owner *netMultiLink // access to link uri and transport
 	mux   sync.Mutex    // guards following fields
@@ -95,19 +111,19 @@ func (self *netLink) connect() (net.Conn, error) {
 	}
 
 	if nil == self.conn {
-		var conn net.Conn
-		var err error
-		if nil == self.owner.transport.tlscfg {
-			conn, err = net.Dial("tcp", self.owner.uri.Host)
-		} else {
-			conn, err = tls.Dial("tcp", self.owner.uri.Host, self.owner.transport.tlscfg)
-		}
+		self.mux.Unlock()
+		conn, err := netDial(self.owner.uri.Host, self.owner.transport.tlscfg)
+		self.mux.Lock()
 		if nil != err {
 			return nil, NewErrTransport(err)
 		}
 
-		self.conn = conn
-		self.cond.Signal()
+		if nil == self.conn {
+			self.conn = conn
+			self.cond.Signal()
+		} else {
+			conn.Close()
+		}
 	}
 
 	return self.conn, nil
@@ -314,13 +330,7 @@ func (self *netTransport) Listen() error {
 	}
 
 	if nil == self.listen {
-		var listen net.Listener
-		var err error
-		if nil == self.tlscfg {
-			listen, err = net.Listen("tcp", self.uri.Host)
-		} else {
-			listen, err = tls.Listen("tcp", self.uri.Host, self.tlscfg)
-		}
+		listen, err := netListen(self.uri.Host, self.tlscfg)
 		if nil != err {
 			return NewErrTransport(err)
 		}
