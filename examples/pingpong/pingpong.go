@@ -67,6 +67,51 @@ func pong(id string, count int) {
 	mainWG.Done()
 }
 
+func iping(uri string, count int) {
+	chch := make(chan interface{})
+
+	err := netchan.Connect(uri, chch, nil)
+	if nil != err {
+		panic(err)
+	}
+
+	for i := 0; count > i; i++ {
+		ch := make(chan interface{})
+		chch <- ch
+		fmt.Println("iping")
+		close(chch)
+		chch = (<-ch).(chan interface{})
+	}
+
+	close(chch)
+
+	mainWG.Done()
+}
+
+func ipong(id string, count int) {
+	chch := make(chan interface{})
+
+	err := netchan.Publish(id, chch)
+	if nil != err {
+		panic(err)
+	}
+
+	for i := 0; count > i; i++ {
+		ch := (<-chch).(chan interface{})
+		fmt.Println("ipong")
+		if 0 == i {
+			netchan.Unpublish(id, chch)
+		}
+		chch = make(chan interface{})
+		ch <- chch
+		close(ch)
+	}
+
+	time.Sleep(100 * time.Millisecond)
+
+	mainWG.Done()
+}
+
 func main() {
 	args := os.Args
 
@@ -84,6 +129,12 @@ func main() {
 	} else if "pong" == cmd {
 		mainWG.Add(1)
 		go pong(uri, cnt)
+	} else if "iping" == cmd {
+		mainWG.Add(1)
+		go iping(uri, cnt)
+	} else if "ipong" == cmd {
+		mainWG.Add(1)
+		go ipong(uri, cnt)
 	}
 
 	mainWG.Wait()
