@@ -1,4 +1,14 @@
 language: go
 
+install:
+- go get -t -v ./...
+- go install -v ./...
+
+script:
+- go test -v ./netchan
+-
+- $GOPATH/bin/pingpong pong tcp://:25000 pingpong 10 & $GOPATH/bin/pingpong ping tcp://:25001 tcp://127.0.0.1:25000/pingpong 10 & wait
+- $GOPATH/bin/pingpong ipong tcp://:25000 pingpong 10 & $GOPATH/bin/pingpong iping tcp://:25001 tcp://127.0.0.1:25000/pingpong 10 & wait
+
 notifications:
   email: false
