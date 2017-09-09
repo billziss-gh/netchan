@@ -70,6 +70,11 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 	var link Link
 	if nil != uri {
 		var err error
+		err = self.transport.Listen()
+		if nil != err {
+			return err
+		}
+
 		id, link, err = self.transport.Connect(uri)
 		if nil != err {
 			return err
