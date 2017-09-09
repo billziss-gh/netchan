@@ -251,12 +251,6 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	u := reflect.MakeChan(v.Type(), 1)
 	v.Set(u)
 
-	/*
-	 * connect() may only return "chan is already connected" error,
-	 * which cannot happen in this scenario (because we always create
-	 * new channels with reflect.MakeChan()).
-	 */
-
 	self.connect(id, link, u, nil)
 
 	return nil
