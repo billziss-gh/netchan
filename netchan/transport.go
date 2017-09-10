@@ -13,55 +13,9 @@
 package netchan
 
 import (
-	"io"
 	"net/url"
 	"sync"
 )
-
-func readMsg(r io.Reader) ([]byte, error) {
-	buf := [4]byte{}
-	_, err := io.ReadFull(r, buf[:])
-	if nil != err {
-		return nil, NewErrTransport(err)
-	}
-
-	n := int(buf[0]) | (int(buf[1]) << 8) | (int(buf[2]) << 16) | (int(buf[3]) << 24)
-	if 4 > n || configMaxMsgSize < n {
-		return nil, ErrTransportMessageCorrupt
-	}
-
-	msg := make([]byte, n)
-	_, err = io.ReadFull(r, msg[4:])
-	if nil != err {
-		return nil, NewErrTransport(err)
-	}
-
-	msg[0] = buf[0]
-	msg[1] = buf[1]
-	msg[2] = buf[2]
-	msg[3] = buf[3]
-
-	return msg, nil
-}
-
-func writeMsg(w io.Writer, msg []byte) error {
-	n := len(msg)
-	if 4 > n || configMaxMsgSize < n {
-		return ErrTransportMessageCorrupt
-	}
-
-	msg[0] = byte(n & 0xff)
-	msg[1] = byte((n >> 8) & 0xff)
-	msg[2] = byte((n >> 16) & 0xff)
-	msg[3] = byte((n >> 24) & 0xff)
-
-	_, err := w.Write(msg)
-	if nil != err {
-		return NewErrTransport(err)
-	}
-
-	return nil
-}
 
 type defaultTransport struct {
 	chanEnc   ChanEncoder
