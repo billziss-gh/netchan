@@ -46,7 +46,7 @@ func netListen(address string, tlscfg *tls.Config) (net.Listener, error) {
 
 func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 	if 0 != idleTimeout {
-		// net.Conn does not have idle deadline, so emulate with read deadline on message length
+		// net.Conn does not have "idle" deadline, so emulate with read deadline on message length
 		conn.SetReadDeadline(time.Now().Add(idleTimeout))
 	}
 
@@ -90,6 +90,11 @@ func netWriteMsg(conn net.Conn, idleTimeout time.Duration, msg []byte) error {
 	msg[1] = byte((n >> 8) & 0xff)
 	msg[2] = byte((n >> 16) & 0xff)
 	msg[3] = byte((n >> 24) & 0xff)
+
+	if 0 != idleTimeout {
+		// extend read deadline to allow enough time for message to be written
+		conn.SetReadDeadline(time.Now().Add(idleTimeout))
+	}
 
 	_, err := conn.Write(msg)
 	if nil != err {
