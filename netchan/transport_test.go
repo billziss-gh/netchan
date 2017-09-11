@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 type testTransportRecverSender struct {
@@ -147,4 +148,74 @@ func TestTlsTransport(t *testing.T) {
 	defer transport.Close()
 
 	testTransport(t, transport, "tls")
+}
+
+type testTransportRedialRecverSender struct {
+	t    *testing.T
+	done chan struct{}
+}
+
+func newtestTransportRedialRecverSender(t *testing.T) *testTransportRedialRecverSender {
+	return &testTransportRedialRecverSender{
+		t,
+		make(chan struct{}),
+	}
+}
+
+func (self *testTransportRedialRecverSender) transportRecver(link Link) error {
+	link.Recv()
+	return ErrTransportClosed
+}
+
+func (self *testTransportRedialRecverSender) transportSender(link Link) error {
+	err := link.Send("id", reflect.ValueOf("msg"))
+	if nil == err {
+		self.t.Error("Sender: expect error, got nil")
+	}
+
+	close(self.done)
+	return ErrTransportClosed
+}
+
+func testTransportRedial(t *testing.T, transport Transport, scheme string) {
+	now := time.Now()
+	trs := newtestTransportRedialRecverSender(t)
+	transport.SetRecver(trs.transportRecver)
+	transport.SetSender(trs.transportSender)
+
+	err := transport.Listen()
+	if nil != err {
+		panic(err)
+	}
+
+	_, link, err := transport.Connect(&url.URL{
+		Scheme: scheme,
+		Host:   "127.0.0.1:25001",
+		Path:   "/id",
+	})
+	if nil != err {
+		panic(err)
+	}
+
+	link.Open()
+
+	<-trs.done
+
+	if time.Second > time.Now().Sub(now) {
+		t.Error("expect 1 second of redial attempts; got less")
+	}
+}
+
+func TestTcpTransportRedial(t *testing.T) {
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		},
+		&Config{RedialTimeout: time.Second})
+	defer transport.Close()
+
+	testTransportRedial(t, transport, "tcp")
 }
