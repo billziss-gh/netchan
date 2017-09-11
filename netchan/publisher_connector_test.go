@@ -61,7 +61,8 @@ func TestPublisherConnector(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -110,7 +111,8 @@ func TestPublisherConnectorUri(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -201,7 +203,8 @@ func TestPublisherConnectorAnyAll(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -304,7 +307,8 @@ func TestPublisherConnectorError(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -352,7 +356,8 @@ func TestPublisherConnectorCloseRecv(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -417,7 +422,8 @@ func TestPublisherConnectorMulti(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -503,7 +509,8 @@ func TestPublisherConnectorMultiConcurrent(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -565,7 +572,8 @@ func TestPublisherConnectorRoundtrip(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {
@@ -656,7 +664,8 @@ func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {

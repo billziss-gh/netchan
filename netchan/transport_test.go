@@ -119,7 +119,8 @@ func TestTcpTransport(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	defer transport.Close()
 
 	testTransport(t, transport, "tcp")
@@ -138,6 +139,7 @@ func TestTlsTransport(t *testing.T) {
 			Scheme: "tls",
 			Host:   ":25000",
 		},
+		nil,
 		&tls.Config{
 			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,

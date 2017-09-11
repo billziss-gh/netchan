@@ -71,7 +71,8 @@ func TestConnector(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	NewPublisher(transport)
 	connector := NewConnector(transport)
 	defer func() {

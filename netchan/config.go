@@ -12,8 +12,22 @@
 
 package netchan
 
-var (
-	configMaxMsgSize   = 16 * 1024 * 1024
-	configMaxConn      = 4
-	configMaxIoRetries = 3
+import (
+	"time"
 )
+
+const (
+	configMaxMsgSize = 16 * 1024 * 1024
+	configMaxLinks   = 4
+)
+
+type Config struct {
+	MaxLinks    int
+	DialTimeout time.Duration
+	IdleTimeout time.Duration
+}
+
+func (self *Config) Clone() *Config {
+	clone := *self
+	return &clone
+}

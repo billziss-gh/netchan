@@ -26,8 +26,6 @@ import (
 	"time"
 )
 
-const netIdleTimeout = 3 * time.Minute
-
 func netDial(address string, tlscfg *tls.Config) (net.Conn, error) {
 	if nil == tlscfg {
 		return net.Dial("tcp", address)
@@ -191,7 +189,7 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 
 		if nil == self.conn {
 			self.conn = conn
-			self.idleTimeout = netIdleTimeout
+			self.idleTimeout = self.owner.transport.cfg.IdleTimeout
 			self.cond.Signal()
 		} else {
 			conn.Close()
@@ -299,7 +297,7 @@ func newNetMultiLink(transport *netTransport, uri *url.URL) *netMultiLink {
 		transport: transport,
 		uri:       uri,
 		index:     ^uint32(0), // start at -1
-		link:      make([]*netLink, configMaxConn),
+		link:      make([]*netLink, transport.cfg.MaxLinks),
 	}
 	for i := range self.link {
 		self.link[i] = newNetLink(self)
@@ -342,6 +340,7 @@ func (self *netMultiLink) linkString(link *netLink) string {
 type netTransport struct {
 	marshaler Marshaler
 	uri       *url.URL
+	cfg       *Config
 	tlscfg    *tls.Config
 	recver    func(link Link) error
 	sender    func(link Link) error
@@ -353,13 +352,23 @@ type netTransport struct {
 
 // NewNetTransport creates a new TCP Transport. The URI to listen to
 // should have the syntax tcp://[HOST]:PORT.
-func NewNetTransport(marshaler Marshaler, uri *url.URL) Transport {
-	return NewNetTransportTLS(marshaler, uri, nil)
+func NewNetTransport(marshaler Marshaler, uri *url.URL, cfg *Config) Transport {
+	return NewNetTransportTLS(marshaler, uri, cfg, nil)
 }
 
 // NewNetTransportTLS creates a new TLS Transport. The URI to listen to
 // should have the syntax tls://[HOST]:PORT.
-func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) Transport {
+func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, cfg *Config,
+	tlscfg *tls.Config) Transport {
+	if nil != cfg {
+		cfg = cfg.Clone()
+	} else {
+		cfg = &Config{}
+	}
+	if 0 == cfg.MaxLinks {
+		cfg.MaxLinks = configMaxLinks
+	}
+
 	if nil != tlscfg {
 		tlscfg = tlscfg.Clone()
 	}
@@ -367,6 +376,7 @@ func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, tlscfg *tls.Config) T
 	return &netTransport{
 		marshaler: marshaler,
 		uri:       uri,
+		cfg:       cfg,
 		tlscfg:    tlscfg,
 		mlink:     make(map[string]*netMultiLink),
 	}
@@ -548,4 +558,5 @@ var _ Transport = RegisterTransport("tcp", NewNetTransport(
 	&url.URL{
 		Scheme: "tcp",
 		Host:   ":25454",
-	}))
+	},
+	nil))

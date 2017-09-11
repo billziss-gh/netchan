@@ -47,7 +47,8 @@ func TestPublisher(t *testing.T) {
 		&url.URL{
 			Scheme: "tcp",
 			Host:   ":25000",
-		})
+		},
+		nil)
 	publisher := NewPublisher(transport)
 	NewConnector(transport)
 	defer func() {

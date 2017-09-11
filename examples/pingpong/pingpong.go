@@ -121,7 +121,7 @@ func main() {
 	cnt, _ := strconv.Atoi(args[4])
 
 	netchan.RegisterTransport("tcp",
-		netchan.NewNetTransport(netchan.DefaultMarshaler, lnu))
+		netchan.NewNetTransport(netchan.DefaultMarshaler, lnu, nil))
 
 	if "ping" == cmd {
 		mainWG.Add(1)
