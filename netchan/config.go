@@ -21,12 +21,25 @@ const (
 	configMaxLinks   = 4
 )
 
+// Config contains configuration parameters for a Transport.
 type Config struct {
-	MaxLinks      int
+	// MaxLinks contains the maximum number of links that may be opened
+	// to a particular address/URI.
+	MaxLinks int
+
+	// RedialTimeout contains a timeout for "redial" attempts. If it is
+	// non-zero a Transport will retry dialing if a dialing error occurs
+	// for at least the duration specified in RedialTimeout. If this
+	// field is zero no redial attempts will be made.
 	RedialTimeout time.Duration
-	IdleTimeout   time.Duration
+
+	// IdleTimeout will close connections that have been idle for the
+	// specified duration. If this field is zero idle connections will
+	// not be closed.
+	IdleTimeout time.Duration
 }
 
+// Clone makes a shallow clone of the receiver Config.
 func (self *Config) Clone() *Config {
 	clone := *self
 	return &clone
