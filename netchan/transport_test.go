@@ -124,7 +124,10 @@ func TestTcpTransport(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	defer transport.Close()
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	testTransport(t, transport, "tcp")
 }
@@ -147,7 +150,10 @@ func TestTlsTransport(t *testing.T) {
 			Certificates:       []tls.Certificate{cert},
 			InsecureSkipVerify: true,
 		})
-	defer transport.Close()
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	testTransport(t, transport, "tls")
 }
@@ -243,7 +249,10 @@ func TestTcpTransportIdle(t *testing.T) {
 			Host:   ":25000",
 		},
 		&Config{IdleTimeout: time.Second})
-	defer transport.Close()
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	testTransportIdle(t, transport, "tcp")
 }
@@ -313,7 +322,10 @@ func TestTcpTransportRedial(t *testing.T) {
 			Host:   ":25000",
 		},
 		&Config{RedialTimeout: time.Second})
-	defer transport.Close()
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
 
 	testTransportRedial(t, transport, "tcp")
 }
