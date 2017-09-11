@@ -22,9 +22,9 @@ const (
 )
 
 type Config struct {
-	MaxLinks    int
-	DialTimeout time.Duration
-	IdleTimeout time.Duration
+	MaxLinks      int
+	RedialTimeout time.Duration
+	IdleTimeout   time.Duration
 }
 
 func (self *Config) Clone() *Config {

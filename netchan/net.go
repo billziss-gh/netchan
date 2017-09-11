@@ -16,6 +16,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"math/rand"
 	"net"
 	"net/url"
 	"reflect"
@@ -26,12 +27,55 @@ import (
 	"time"
 )
 
-func netDial(address string, tlscfg *tls.Config) (net.Conn, error) {
-	if nil == tlscfg {
-		return net.Dial("tcp", address)
-	} else {
-		return tls.Dial("tcp", address, tlscfg)
+const (
+	netRedialDelayMin = 3 * time.Second
+	netRedialDelayMax = 60 * time.Second
+)
+
+func netDial(address string, redialTimeout time.Duration,
+	tlscfg *tls.Config) (conn net.Conn, err error) {
+	var deadline time.Time
+	var rnd *rand.Rand
+
+	if 0 != redialTimeout {
+		deadline = time.Now().Add(redialTimeout)
 	}
+
+	for delay := netRedialDelayMin; ; delay *= 2 {
+		if nil == tlscfg {
+			conn, err = net.Dial("tcp", address)
+		} else {
+			conn, err = tls.Dial("tcp", address, tlscfg)
+		}
+
+		if nil == err || 0 == redialTimeout {
+			break
+		}
+
+		now := time.Now()
+		remain := deadline.Sub(now)
+		if 0 >= remain {
+			break
+		}
+
+		if nil == rnd {
+			rnd = rand.New(rand.NewSource(now.UnixNano()))
+		}
+		if netRedialDelayMax < delay {
+			delay = netRedialDelayMax
+		}
+
+		delay += time.Duration(rnd.Int63n(int64(delay)))
+
+		if remain < delay {
+			time.Sleep(remain)
+		} else {
+			time.Sleep(delay)
+		}
+
+	}
+
+	return
 }
 
 func netListen(address string, tlscfg *tls.Config) (net.Listener, error) {
@@ -181,7 +225,8 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 
 	if nil == self.conn {
 		self.mux.Unlock()
-		conn, err := netDial(self.owner.uri.Host, self.owner.transport.tlscfg)
+		conn, err := netDial(self.owner.uri.Host, self.owner.transport.cfg.RedialTimeout,
+			self.owner.transport.tlscfg)
 		self.mux.Lock()
 		if nil != err {
 			return nil, 0, NewErrTransport(err)
