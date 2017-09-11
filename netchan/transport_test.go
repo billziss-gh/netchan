@@ -14,6 +14,8 @@ package netchan
 
 import (
 	"crypto/tls"
+	"io"
+	"net"
 	"net/url"
 	"reflect"
 	"sync/atomic"
@@ -148,6 +150,102 @@ func TestTlsTransport(t *testing.T) {
 	defer transport.Close()
 
 	testTransport(t, transport, "tls")
+}
+
+type testTransportIdleRecverSender struct {
+	id   string
+	msg  string
+	t    *testing.T
+	rcnt uint32
+	done chan struct{}
+}
+
+func newTestTransportIdleRecverSender(
+	id string, msg string, t *testing.T) *testTransportIdleRecverSender {
+	return &testTransportIdleRecverSender{
+		id,
+		msg,
+		t,
+		0,
+		make(chan struct{}),
+	}
+}
+
+func (self *testTransportIdleRecverSender) transportRecver(link Link) error {
+	id, vmsg, err := link.Recv()
+	if nil != err {
+		err := err.(Err).Nested()
+		if io.EOF != err && !err.(net.Error).Timeout() {
+			self.t.Errorf("Recver: unexpected error %#v", err)
+		}
+
+		if 2 == atomic.AddUint32(&self.rcnt, 1) {
+			close(self.done)
+		}
+
+		return ErrTransportClosed
+	}
+	if id != self.id {
+		self.t.Errorf("Recver: id mismatch")
+	}
+	msg := vmsg.Interface()
+	if !reflect.DeepEqual(msg, self.msg) {
+		self.t.Errorf("Recver: msg mismatch")
+	}
+
+	return nil
+}
+
+func (self *testTransportIdleRecverSender) transportSender(link Link) error {
+	err := link.Send(self.id, reflect.ValueOf(self.msg))
+	if nil != err {
+		self.t.Errorf("Sender: error %v", err)
+		return err
+	}
+
+	<-self.done
+
+	return ErrTransportClosed
+}
+
+func testTransportIdle(t *testing.T, transport Transport, scheme string) {
+	id0 := "NAME"
+	msg := "42,43,44,45,46"
+	trs := newTestTransportIdleRecverSender(id0, msg, t)
+	transport.SetRecver(trs.transportRecver)
+	transport.SetSender(trs.transportSender)
+
+	err := transport.Listen()
+	if nil != err {
+		panic(err)
+	}
+
+	_, link, err := transport.Connect(&url.URL{
+		Scheme: scheme,
+		Host:   "127.0.0.1",
+		Path:   "/" + id0,
+	})
+	if nil != err {
+		panic(err)
+	}
+
+	link.Open()
+
+	<-trs.done
+}
+
+func TestTcpTransportIdle(t *testing.T) {
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		},
+		&Config{IdleTimeout: time.Second})
+	defer transport.Close()
+
+	testTransportIdle(t, transport, "tcp")
 }
 
 type testTransportRedialRecverSender struct {
