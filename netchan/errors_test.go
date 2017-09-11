@@ -17,13 +17,9 @@ import (
 )
 
 func TestErr(t *testing.T) {
-	_ = NewErrArgument().(Err)
-	_ = NewErrTransport().(Err)
-	_ = NewErrMarshaler().(Err)
-
-	_ = NewErrArgument().(*ErrArgument)
-	_ = NewErrTransport().(*ErrTransport)
-	_ = NewErrMarshaler().(*ErrMarshaler)
+	_ = error(NewErrArgument()).(Err)
+	_ = error(NewErrTransport()).(Err)
+	_ = error(NewErrMarshaler()).(Err)
 
 	msg0 := ErrArgumentInvalid.(*ErrArgument).message
 	if "netchan: argument is invalid" != msg0 {

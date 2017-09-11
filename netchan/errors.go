@@ -61,7 +61,7 @@ type ErrArgument struct {
 }
 
 // NewErrArgument creates a new function/method argument error.
-func NewErrArgument(args ...interface{}) error {
+func NewErrArgument(args ...interface{}) *ErrArgument {
 	err := &ErrArgument{}
 	err._args(args)
 	return err
@@ -74,7 +74,7 @@ type ErrTransport struct {
 }
 
 // NewErrTransport creates a new network transport error.
-func NewErrTransport(args ...interface{}) error {
+func NewErrTransport(args ...interface{}) *ErrTransport {
 	err := &ErrTransport{}
 	err._args(args)
 	return err
@@ -87,7 +87,7 @@ type ErrMarshaler struct {
 }
 
 // NewErrMarshaler creates a new message encoding/decoding error.
-func NewErrMarshaler(args ...interface{}) error {
+func NewErrMarshaler(args ...interface{}) *ErrMarshaler {
 	err := &ErrMarshaler{}
 	err._args(args)
 	return err
