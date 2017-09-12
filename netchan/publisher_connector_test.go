@@ -368,6 +368,66 @@ func TestPublisherConnectorCloseRecv(t *testing.T) {
 	testPublisherConnectorCloseRecv(t, publisher, connector)
 }
 
+func testPublisherConnectorInv(t *testing.T, publisher Publisher, connector Connector) {
+	ichan := make(chan Message)
+	pchan := make(chan string)
+	cchan := make(chan int)
+	echan := make(chan error)
+
+	err := publisher.Publish(IdInv, ichan)
+	if nil != err {
+		panic(err)
+	}
+
+	err = publisher.Publish("one", pchan)
+	if nil != err {
+		panic(err)
+	}
+
+	err = connector.Connect(
+		&url.URL{
+			Scheme: "tcp",
+			Host:   "127.0.0.1",
+			Path:   "one",
+		},
+		cchan,
+		echan)
+	if nil != err {
+		panic(err)
+	}
+
+	cchan <- 42
+
+	close(cchan)
+
+	m := <-ichan
+	if "one" != m.Id || 42 != m.Value.Interface() {
+		t.Errorf("incorrect msg: expect invalid message, got %v", m)
+	}
+
+	publisher.Unpublish("one", pchan)
+	publisher.Unpublish(IdInv, pchan)
+}
+
+func TestPublisherConnectorInv(t *testing.T) {
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		},
+		nil)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testPublisherConnectorInv(t, publisher, connector)
+}
+
 func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
