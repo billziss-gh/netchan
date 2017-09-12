@@ -275,7 +275,7 @@ func (self *netLink) Recv() (id string, vmsg reflect.Value, err error) {
 
 	id, vmsg, err = self.owner.transport.marshaler.Unmarshal(self, buf)
 	if nil != err {
-		self.reset(false)
+		// do not reset the link
 		return
 	}
 
