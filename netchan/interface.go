@@ -102,10 +102,19 @@ type Publisher interface {
 	// them are delivered to a single channel published under that ID
 	// (determined using a pseudo-random algorithm).
 	//
-	// To receive publish errors one can publish error channels (of type
+	// To receive publisher errors one can publish error channels (of type
 	// chan error) under the special broadcast ID "+err/". All such error
 	// channels will receive transport errors, etc. This special broadcast
 	// ID is local to the running process and cannot be accessed remotely.
+	//
+	// It is also possible to receive "invalid" messages on channels (of
+	// type chan Message) published under the special broadcast ID
+	// "+inv/". Invalid messages are messages that cannot be delivered
+	// for any of a number of reasons: because they contain the wrong
+	// message ID, because their payload is the wrong type, because the
+	// destination channels have been closed, etc. As with "+err/" this
+	// special broadcast ID is local to the running process and cannot
+	// be accessed remotely.
 	Publish(id string, ichan interface{}) error
 
 	// Unpublish unpublishes a channel. It disassociates it from the ID
