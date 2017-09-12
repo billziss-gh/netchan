@@ -88,19 +88,6 @@ import (
 	"reflect"
 )
 
-// Err is implemented by errors reported by this package.
-type Err interface {
-	error
-
-	// Nested returns the original error that is the cause of this error.
-	// May be nil.
-	Nested() error
-
-	// Chan returns a channel that is associated with this error.
-	// May be nil.
-	Chan() interface{}
-}
-
 // Publisher is used to publish and unpublish channels.
 type Publisher interface {
 	// Publish publishes a channel under an ID. Publishing a channel
@@ -148,6 +135,29 @@ type Connector interface {
 	//
 	// To disconnect a connected channel simply close it.
 	Connect(uri interface{}, ichan interface{}, echan chan error) error
+}
+
+// Err is implemented by errors reported by this package.
+type Err interface {
+	error
+
+	// Nested returns the original error that is the cause of this error.
+	// May be nil.
+	Nested() error
+
+	// Chan returns a channel that is associated with this error.
+	// May be nil.
+	Chan() interface{}
+}
+
+// Message is a struct that contains a message ID and value.
+type Message struct {
+	// Id contains the ID of the intended recipient.
+	Id string
+
+	// Value contains the message payload (as decoded by the marshaling
+	// layer).
+	Value reflect.Value
 }
 
 // Link encapsulates a network transport link between two machines.

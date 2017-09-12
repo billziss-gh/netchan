@@ -20,6 +20,15 @@ import (
 	"time"
 )
 
+func vchansend(vchan reflect.Value, vmsg reflect.Value) (ok bool) {
+	defer func() {
+		recover()
+	}()
+	vchan.Send(vmsg)
+	ok = true
+	return
+}
+
 type pubinfo struct {
 	vlist []reflect.Value
 }
@@ -50,13 +59,18 @@ func (self *publisher) Publish(id string, ichan interface{}) error {
 		panic(ErrArgumentInvalid)
 	}
 
-	if IdErr != id {
+	switch id {
+	default:
 		err := self.transport.Listen()
 		if nil != err {
 			return err
 		}
-	} else {
+	case IdErr:
 		if errType != vchan.Type().Elem() {
+			panic(ErrArgumentInvalid)
+		}
+	case IdInv:
+		if msgType != vchan.Type().Elem() {
 			panic(ErrArgumentInvalid)
 		}
 	}
@@ -117,49 +131,50 @@ func (self *publisher) recver(link Link) error {
 		if nil != debugLog {
 			debugLog("%v Recv = (id=%#v, vmsg=%#v, err=%#v)", link, id, vmsg, err)
 		}
-		if nil != err {
-			id, vmsg = IdErr, reflect.ValueOf(err)
-		}
 
-		var vlist []reflect.Value
-		if w, ok := refDecode(id); ok {
-			ichan := self.wchanmap.strongref(w, nil)
-			if nil != ichan {
-				vlist = append(vlist, reflect.ValueOf(ichan))
+		if nil == err {
+			ok := self.deliver(id, vmsg, pubrnd)
+			if !ok {
+				self.deliver(IdInv, reflect.ValueOf(Message{id, vmsg}), pubrnd)
 			}
 		} else {
-			// make a copy so that we can safely use it outside the read lock
-			self.pubmux.RLock()
-			vlist = append(vlist, self.pubmap[id].vlist...)
-			self.pubmux.RUnlock()
-		}
-
-		if 0 < len(vlist) {
-			index := pubrnd.Intn(len(vlist))
-			broadcast := strings.HasPrefix(id, strBroadcast)
-
-			for i := range vlist {
-				ok := func() (ok bool) {
-					defer func() {
-						recover()
-					}()
-					vlist[(i+index)%len(vlist)].Send(vmsg)
-					ok = true
-					return
-				}()
-
-				if !broadcast && ok {
-					break
-				}
-			}
-		}
-
-		if nil != err {
+			self.deliver(IdErr, reflect.ValueOf(err), pubrnd)
 			if _, ok := err.(*ErrTransport); ok {
 				return err
 			}
 		}
 	}
+}
+
+func (self *publisher) deliver(id string, vmsg reflect.Value, pubrnd *rand.Rand) (success bool) {
+	var vlist []reflect.Value
+	if w, ok := refDecode(id); ok {
+		ichan := self.wchanmap.strongref(w, nil)
+		if nil != ichan {
+			vlist = append(vlist, reflect.ValueOf(ichan))
+		}
+	} else {
+		// make a copy so that we can safely use it outside the read lock
+		self.pubmux.RLock()
+		vlist = append(vlist, self.pubmap[id].vlist...)
+		self.pubmux.RUnlock()
+	}
+
+	if 0 < len(vlist) {
+		index := pubrnd.Intn(len(vlist))
+		broadcast := strings.HasPrefix(id, strBroadcast)
+
+		for i := range vlist {
+			if vchansend(vlist[(i+index)%len(vlist)], vmsg) {
+				success = true
+				if !broadcast {
+					break
+				}
+			}
+		}
+	}
+
+	return
 }
 
 func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
@@ -180,8 +195,14 @@ var DefaultPublisher Publisher = NewPublisher(DefaultTransport)
 // ID is local to the running process and cannot be accessed remotely.
 var IdErr = "+err/"
 
+// IdInv contains the special invalid message broadcast ID. This special
+// broadcast ID is local to the running process and cannot be accessed
+// remotely.
+var IdInv = "+inv/"
+
 var strBroadcast = "+"
 var errType = reflect.TypeOf((*error)(nil)).Elem()
+var msgType = reflect.TypeOf(Message{})
 
 // Publish publishes a channel under an ID. Publishing a channel
 // associates it with the ID and makes it available to receive

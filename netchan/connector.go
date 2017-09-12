@@ -18,6 +18,15 @@ import (
 	"sync"
 )
 
+func echansend(echan chan error, err error) (ok bool) {
+	defer func() {
+		recover()
+	}()
+	echan <- err
+	ok = true
+	return
+}
+
 type coninfo struct {
 	slist []reflect.SelectCase
 	ilist []string
@@ -226,12 +235,7 @@ outer:
 						e.args(slist[i].Chan.Interface())
 					}
 
-					func() {
-						defer func() {
-							recover()
-						}()
-						elist[i] <- err
-					}()
+					echansend(elist[i], err)
 				}
 
 				if _, ok := err.(*ErrTransport); ok {
