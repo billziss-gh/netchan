@@ -75,3 +75,116 @@ closed when they will no longer be used for communication.
 This package comes with a number of default transports: tcp, tls. It is
 possible to add transports by implementing the Transport and Link
 interfaces.
+
+## Example
+
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+	"sync"
+	"time"
+
+	"github.com/billziss-gh/netchan/netchan"
+)
+
+func ping(wg *sync.WaitGroup, count int) {
+	defer wg.Done()
+
+	pingch := make(chan chan struct{})
+	errch := make(chan error, 1)
+	err := netchan.Connect("tcp://127.0.0.1/pingpong", pingch, errch)
+	if nil != err {
+		panic(err)
+	}
+
+	for i := 0; count > i; i++ {
+		// send a new pong (response) channel
+		pongch := make(chan struct{})
+		pingch <- pongch
+
+		fmt.Println("ping")
+
+		// wait for pong response, error or timeout
+		select {
+		case <-pongch:
+		case err = <-errch:
+			panic(err)
+		case <-time.After(10 * time.Second):
+			err = errors.New("timeout")
+			panic(err)
+		}
+	}
+
+	pingch <- nil
+
+	close(pingch)
+}
+
+func pong(wg *sync.WaitGroup, published chan struct{}) {
+	defer wg.Done()
+
+	pingch := make(chan chan struct{})
+	err := netchan.Publish("pingpong", pingch)
+	if nil != err {
+		panic(err)
+	}
+
+	close(published)
+
+	for {
+		// receive the pong (response) channel
+		pongch := <-pingch
+		if nil == pongch {
+			fmt.Println("END")
+			break
+		}
+
+		fmt.Println("pong")
+
+		// send the pong response
+		pongch <- struct{}{}
+	}
+
+	netchan.Unpublish("pingpong", pingch)
+}
+
+func main() {
+	wg := &sync.WaitGroup{}
+
+	published := make(chan struct{})
+	wg.Add(1)
+	go pong(wg, published)
+	<-published
+
+	wg.Add(1)
+	go ping(wg, 10)
+
+	wg.Wait()
+
+	// Output:
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// ping
+	// pong
+	// END
+}
+```
