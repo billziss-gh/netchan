@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"reflect"
 	"sync"
+	"sync/atomic"
 )
 
 func echansend(echan chan error, err error) (ok bool) {
@@ -38,6 +39,9 @@ type connector struct {
 	conmux    sync.RWMutex
 	conmap    map[Link]coninfo
 	lnkmap    map[interface{}]Link
+
+	// monitored statistics
+	statSend, statSendErr uint32
 }
 
 // NewConnector creates a new Connector that can be used to connect
@@ -229,7 +233,11 @@ outer:
 			if nil != debugLog {
 				debugLog("%v Send = (err=%#v)", link, err)
 			}
-			if nil != err {
+			if nil == err {
+				atomic.AddUint32(&self.statSend, 1)
+			} else {
+				atomic.AddUint32(&self.statSendErr, 1)
+
 				if nil != elist[i] {
 					if e, ok := err.(errArgs); ok {
 						e.args(slist[i].Chan.Interface())
@@ -264,6 +272,21 @@ func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) erro
 	}
 
 	return nil
+}
+
+func (self *connector) StatNames() []string {
+	return []string{"Send", "SendErr"}
+}
+
+func (self *connector) Stat(name string) float64 {
+	switch name {
+	case "Send":
+		return float64(atomic.LoadUint32(&self.statSend))
+	case "SendErr":
+		return float64(atomic.LoadUint32(&self.statSendErr))
+	default:
+		return 0
+	}
 }
 
 // DefaultConnector is the default Connector of the running process.

@@ -146,6 +146,20 @@ type Connector interface {
 	Connect(uri interface{}, ichan interface{}, echan chan error) error
 }
 
+// Monitor is used to monitor the activity of a netchan component. A
+// Monitor is a collection of values accessible by name; these values
+// typically represent a count or ratio.
+//
+// Publishers and connectors implement Monitor to provide insights
+// into their internal workings.
+type Monitor interface {
+	// StatNames returns a list of value names.
+	StatNames() []string
+
+	// Stat returns the value associated with a particular name.
+	Stat(name string) float64
+}
+
 // Err is implemented by errors reported by this package.
 type Err interface {
 	error

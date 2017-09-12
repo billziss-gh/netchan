@@ -17,6 +17,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -38,6 +39,9 @@ type publisher struct {
 	pubmux    sync.RWMutex
 	pubmap    map[string]pubinfo
 	wchanmap  *weakmap
+
+	// monitored statistics
+	statRecv, statRecvInv, statRecvErr uint32
 }
 
 // NewPublisher creates a new Publisher that can be used to publish
@@ -133,11 +137,17 @@ func (self *publisher) recver(link Link) error {
 		}
 
 		if nil == err {
+			atomic.AddUint32(&self.statRecv, 1)
+
 			ok := self.deliver(id, vmsg, pubrnd)
 			if !ok {
+				atomic.AddUint32(&self.statRecvInv, 1)
+
 				self.deliver(IdInv, reflect.ValueOf(Message{id, vmsg}), pubrnd)
 			}
 		} else {
+			atomic.AddUint32(&self.statRecvErr, 1)
+
 			self.deliver(IdErr, reflect.ValueOf(err), pubrnd)
 			if _, ok := err.(*ErrTransport); ok {
 				return err
@@ -180,6 +190,23 @@ func (self *publisher) deliver(id string, vmsg reflect.Value, pubrnd *rand.Rand)
 func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
 	w := self.wchanmap.weakref(ichan)
 	return w[:], nil
+}
+
+func (self *publisher) StatNames() []string {
+	return []string{"Recv", "RecvInv", "RecvErr"}
+}
+
+func (self *publisher) Stat(name string) float64 {
+	switch name {
+	case "Recv":
+		return float64(atomic.LoadUint32(&self.statRecv))
+	case "RecvInv":
+		return float64(atomic.LoadUint32(&self.statRecvInv))
+	case "RecvErr":
+		return float64(atomic.LoadUint32(&self.statRecvErr))
+	default:
+		return 0
+	}
 }
 
 // DefaultPublisher is the default Publisher of the running process.
