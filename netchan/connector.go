@@ -247,15 +247,21 @@ outer:
 }
 
 func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) error {
+	v := reflect.ValueOf(ichan).Elem()
+
 	var w weakref
 	copy(w[:], buf)
-	id := refEncode(w)
 
-	v := reflect.ValueOf(ichan).Elem()
-	u := reflect.MakeChan(v.Type(), 1)
-	v.Set(u)
+	if (weakref{}) != w {
+		u := reflect.MakeChan(v.Type(), 1)
+		v.Set(u)
 
-	self.connect(id, link, u, nil)
+		id := refEncode(w)
+		self.connect(id, link, u, nil)
+	} else {
+		u := reflect.Zero(v.Type())
+		v.Set(u)
+	}
 
 	return nil
 }

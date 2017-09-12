@@ -179,10 +179,6 @@ func (self *publisher) deliver(id string, vmsg reflect.Value, pubrnd *rand.Rand)
 
 func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
 	w := self.wchanmap.weakref(ichan)
-	if (weakref{}) == w {
-		return nil, ErrMarshalerRefInvalid
-	}
-
 	return w[:], nil
 }
 

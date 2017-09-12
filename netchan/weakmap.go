@@ -47,10 +47,15 @@ func (self *weakmap) weakref(val interface{}) weakref {
 		return weakref{}
 	}
 
+	ptr := *(*[2]uintptr)(unsafe.Pointer(&val))
+	if 0 == ptr[1] {
+		// non-nil interface with nil concrete data!
+		return weakref{}
+	}
+
 	self.mux.Lock()
 	defer self.mux.Unlock()
 
-	ptr := *(*[2]uintptr)(unsafe.Pointer(&val))
 	tup := self.ptrmap[ptr[1]]
 	if nil == tup {
 		tup = &_weaktup{ptr: ptr}
