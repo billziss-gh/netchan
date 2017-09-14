@@ -147,12 +147,12 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 		info.elist = append(info.elist, echan)
 
 		self.conmap[link] = info
-		info.slist[0].Chan.Send(reflect.ValueOf(struct{}{}))
+		info.slist[0].Chan.Interface().(chan struct{}) <- struct{}{}
 
 		link.Open()
 	} else {
 		self.conmap[link] = info
-		info.slist[0].Chan.Send(reflect.ValueOf(struct{}{}))
+		info.slist[0].Chan.Interface().(chan struct{}) <- struct{}{}
 	}
 
 	self.lnkmap[ichan] = link
