@@ -137,13 +137,14 @@ func MakeErrMarshaler(args ...interface{}) *ErrMarshaler {
 // Errors reports by this package. Other errors are also possible.
 // All errors reported implement the Err interface.
 var (
-	ErrArgumentInvalid         error = MakeErrArgument("netchan: argument is invalid")
-	ErrArgumentConnected       error = MakeErrArgument("netchan: argument chan is connected")
-	ErrArgumentNotConnected    error = MakeErrArgument("netchan: argument chan is not connected")
-	ErrTransportInvalid        error = MakeErrTransport("netchan: transport is invalid")
-	ErrTransportClosed         error = MakeErrTransport("netchan: transport is closed")
-	ErrTransportMessageCorrupt error = MakeErrTransport("netchan: transport message is corrupt")
-	ErrMarshalerNoChanEncoder  error = MakeErrMarshaler("netchan: marshaler chan encoder not set")
-	ErrMarshalerNoChanDecoder  error = MakeErrMarshaler("netchan: marshaler chan decoder not set")
-	ErrMarshalerPanic          error = MakeErrMarshaler("netchan: marshaler panic")
+	ErrArgumentInvalid         error = MakeErrArgument("netchan: argument: invalid")
+	ErrArgumentConnected       error = MakeErrArgument("netchan: argument: chan is connected")
+	ErrArgumentNotConnected    error = MakeErrArgument("netchan: argument: chan is not connected")
+	ErrTransportInvalid        error = MakeErrTransport("netchan: transport: invalid")
+	ErrTransportClosed         error = MakeErrTransport("netchan: transport: closed")
+	ErrTransportUnexpectedResp error = MakeErrTransport("netchan: transport: unexpected response")
+	ErrTransportMessageCorrupt error = MakeErrTransport("netchan: transport: message is corrupt")
+	ErrMarshalerNoChanEncoder  error = MakeErrMarshaler("netchan: marshaler: chan encoder not set")
+	ErrMarshalerNoChanDecoder  error = MakeErrMarshaler("netchan: marshaler: chan decoder not set")
+	ErrMarshalerPanic          error = MakeErrMarshaler("netchan: marshaler: panic")
 )

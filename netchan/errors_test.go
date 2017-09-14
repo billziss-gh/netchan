@@ -18,12 +18,14 @@ import (
 
 func TestErr(t *testing.T) {
 	_ = error(MakeErrArgument()).(Err)
+	_ = error(MakeErrPublisher()).(Err)
+	_ = error(MakeErrConnector()).(Err)
 	_ = error(MakeErrTransport()).(Err)
 	_ = error(MakeErrMarshaler()).(Err)
 
 	msg0 := ErrArgumentInvalid.(*ErrArgument).message
-	if "netchan: argument is invalid" != msg0 {
-		t.Errorf("incorrect error message: expect %v, got %v", "netchan: argument is invalid", msg0)
+	if "netchan: argument: invalid" != msg0 {
+		t.Errorf("incorrect error message: expect %v, got %v", "netchan: argument: invalid", msg0)
 	}
 
 	err := ErrArgumentInvalid
