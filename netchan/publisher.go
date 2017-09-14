@@ -148,7 +148,7 @@ func (self *publisher) recver(link Link) error {
 		} else {
 			atomic.AddUint32(&self.statRecvErr, 1)
 
-			self.deliver(IdErr, reflect.ValueOf(err), pubrnd)
+			self.deliver(IdErr, reflect.ValueOf(MakeErrPublisher(err)), pubrnd)
 			if _, ok := err.(*ErrTransport); ok {
 				return err
 			}

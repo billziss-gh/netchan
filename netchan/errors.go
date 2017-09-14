@@ -12,10 +12,6 @@
 
 package netchan
 
-type errArgs interface {
-	args(args ...interface{})
-}
-
 type errData struct {
 	message string
 	nested  error
@@ -43,10 +39,6 @@ func (err *errData) _args(args []interface{}) Err {
 	return nil
 }
 
-func (err *errData) args(args ...interface{}) {
-	err._args(args)
-}
-
 func (err *errData) Error() string {
 	if "" == err.message && nil != err.nested {
 		return err.nested.Error()
@@ -68,11 +60,43 @@ type ErrArgument struct {
 	errData
 }
 
-// MakeErrArgument makes a new function/method argument error.
+// MakeErrArgument makes a function/method argument error.
 func MakeErrArgument(args ...interface{}) *ErrArgument {
 	err := &ErrArgument{}
 	n := err._args(args)
 	if e, ok := n.(*ErrArgument); ok {
+		return e
+	}
+	return err
+}
+
+// ErrPublisher encapsulates a publisher error.
+// ErrPublisher implements the Err interface.
+type ErrPublisher struct {
+	errData
+}
+
+// MakeErrPublisher makes a publisher error.
+func MakeErrPublisher(args ...interface{}) *ErrPublisher {
+	err := &ErrPublisher{}
+	n := err._args(args)
+	if e, ok := n.(*ErrPublisher); ok {
+		return e
+	}
+	return err
+}
+
+// ErrConnector encapsulates a connector error.
+// ErrConnector implements the Err interface.
+type ErrConnector struct {
+	errData
+}
+
+// MakeErrConnector makes a connector error.
+func MakeErrConnector(args ...interface{}) *ErrConnector {
+	err := &ErrConnector{}
+	n := err._args(args)
+	if e, ok := n.(*ErrConnector); ok {
 		return e
 	}
 	return err
@@ -84,7 +108,7 @@ type ErrTransport struct {
 	errData
 }
 
-// MakeErrTransport makes a new network transport error.
+// MakeErrTransport makes a network transport error.
 func MakeErrTransport(args ...interface{}) *ErrTransport {
 	err := &ErrTransport{}
 	n := err._args(args)
@@ -100,7 +124,7 @@ type ErrMarshaler struct {
 	errData
 }
 
-// MakeErrMarshaler makes a new message encoding/decoding error.
+// MakeErrMarshaler makes a message encoding/decoding error.
 func MakeErrMarshaler(args ...interface{}) *ErrMarshaler {
 	err := &ErrMarshaler{}
 	n := err._args(args)

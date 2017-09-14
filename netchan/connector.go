@@ -239,11 +239,7 @@ outer:
 				atomic.AddUint32(&self.statSendErr, 1)
 
 				if nil != elist[i] {
-					if e, ok := err.(errArgs); ok {
-						e.args(slist[i].Chan.Interface())
-					}
-
-					echansend(elist[i], err)
+					echansend(elist[i], MakeErrConnector(err, slist[i].Chan.Interface()))
 				}
 
 				if _, ok := err.(*ErrTransport); ok {
