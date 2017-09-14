@@ -151,8 +151,18 @@ func netWriteMsg(conn net.Conn, idleTimeout time.Duration, msg []byte) error {
 	return nil
 }
 
+func sigchanclose(sigchan chan struct{}) (ok bool) {
+	defer func() {
+		recover()
+	}()
+	close(sigchan)
+	ok = true
+	return
+}
+
 type netLink struct {
 	owner       *netMultiLink // access to link uri and transport
+	sigchan     chan struct{} // signal channel; closed when link is closed
 	mux         sync.Mutex    // guards following fields
 	cond        sync.Cond     // guards condition (self.done || nil != self.conn); uses mux
 	conn        net.Conn      // network connection; nil when not connected
@@ -162,9 +172,13 @@ type netLink struct {
 }
 
 func newNetLink(owner *netMultiLink) *netLink {
-	self := &netLink{owner: owner}
+	self := &netLink{owner: owner, sigchan: make(chan struct{}, 0x7fffffff)}
 	self.cond.L = &self.mux
 	return self
+}
+
+func (self *netLink) Sigchan() chan struct{} {
+	return self.sigchan
 }
 
 func (self *netLink) Open() {
@@ -198,6 +212,7 @@ func (self *netLink) reset(done bool) {
 
 	if done {
 		self.cond.Signal()
+		sigchanclose(self.sigchan)
 	}
 }
 

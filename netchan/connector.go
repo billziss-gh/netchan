@@ -139,7 +139,7 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 	}
 
 	if !found {
-		self.addsigchan(&info)
+		self.addsigchan(link, &info)
 
 		info.slist = append(info.slist,
 			reflect.SelectCase{Dir: reflect.SelectRecv, Chan: vchan})
@@ -178,12 +178,12 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	}
 }
 
-func (self *connector) addsigchan(info *coninfo) {
+func (self *connector) addsigchan(link Link, info *coninfo) {
 	if nil == info.slist {
 		info.slist = append(info.slist,
 			reflect.SelectCase{
 				Dir:  reflect.SelectRecv,
-				Chan: reflect.ValueOf(make(chan struct{}, 0x7fffffff)),
+				Chan: reflect.ValueOf(link.Sigchan()),
 			})
 		info.ilist = append(info.ilist, "")
 		info.elist = append(info.elist, nil)
@@ -193,7 +193,7 @@ func (self *connector) addsigchan(info *coninfo) {
 func (self *connector) sender(link Link) error {
 	self.conmux.Lock()
 	info := self.conmap[link]
-	self.addsigchan(&info)
+	self.addsigchan(link, &info)
 	self.conmap[link] = info
 	self.conmux.Unlock()
 
@@ -214,7 +214,10 @@ outer:
 			drain:
 				for {
 					select {
-					case <-sigchan:
+					case _, ok = <-sigchan:
+						if !ok {
+							return ErrTransportClosed
+						}
 					default:
 						break drain
 					}
