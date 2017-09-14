@@ -48,7 +48,7 @@ func (self *gobMarshaler) Marshal(
 		if r := recover(); nil != r {
 			buf = nil
 			if e, ok := r.(error); ok {
-				err = NewErrMarshaler(e)
+				err = MakeErrMarshaler(e)
 			} else {
 				err = ErrMarshalerPanic
 			}
@@ -62,14 +62,14 @@ func (self *gobMarshaler) Marshal(
 
 	err = enc.Encode(id)
 	if nil != err {
-		err = NewErrMarshaler(err)
+		err = MakeErrMarshaler(err)
 		return
 	}
 
 	msg := vmsg.Interface()
 	err = enc.EncodeValue(reflect.ValueOf(&msg))
 	if nil != err {
-		err = NewErrMarshaler(err)
+		err = MakeErrMarshaler(err)
 		return
 	}
 
@@ -84,7 +84,7 @@ func (self *gobMarshaler) Unmarshal(
 			id = ""
 			vmsg = reflect.Value{}
 			if e, ok := r.(error); ok {
-				err = NewErrMarshaler(e)
+				err = MakeErrMarshaler(e)
 			} else {
 				err = ErrMarshalerPanic
 			}
@@ -98,7 +98,7 @@ func (self *gobMarshaler) Unmarshal(
 
 	err = dec.Decode(&id)
 	if nil != err {
-		err = NewErrMarshaler(err)
+		err = MakeErrMarshaler(err)
 		return
 	}
 
@@ -107,7 +107,7 @@ func (self *gobMarshaler) Unmarshal(
 	if nil != err {
 		id = ""
 		vmsg = reflect.Value{}
-		err = NewErrMarshaler(err)
+		err = MakeErrMarshaler(err)
 		return
 	}
 

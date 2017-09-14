@@ -95,7 +95,7 @@ func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 	buf := [4]byte{}
 	_, err := io.ReadFull(conn, buf[:])
 	if nil != err {
-		return nil, NewErrTransport(err)
+		return nil, MakeErrTransport(err)
 	}
 
 	n := int(buf[0]) | (int(buf[1]) << 8) | (int(buf[2]) << 16) | (int(buf[3]) << 24)
@@ -111,7 +111,7 @@ func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 	msg := make([]byte, n)
 	_, err = io.ReadFull(conn, msg[4:])
 	if nil != err {
-		return nil, NewErrTransport(err)
+		return nil, MakeErrTransport(err)
 	}
 
 	msg[0] = buf[0]
@@ -140,7 +140,7 @@ func netWriteMsg(conn net.Conn, idleTimeout time.Duration, msg []byte) error {
 
 	_, err := conn.Write(msg)
 	if nil != err {
-		return NewErrTransport(err)
+		return MakeErrTransport(err)
 	}
 
 	if 0 != idleTimeout {
@@ -229,7 +229,7 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 			self.owner.transport.tlscfg)
 		self.mux.Lock()
 		if nil != err {
-			return nil, 0, NewErrTransport(err)
+			return nil, 0, MakeErrTransport(err)
 		}
 
 		if nil == self.conn {
@@ -459,7 +459,7 @@ func (self *netTransport) Listen() error {
 	if nil == self.listen {
 		listen, err := netListen(self.uri.Host, self.tlscfg)
 		if nil != err {
-			return NewErrTransport(err)
+			return MakeErrTransport(err)
 		}
 
 		self.listen = listen
@@ -562,7 +562,7 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 	if "" != port {
 		portnum, err := net.LookupPort("tcp", uri.Port())
 		if nil != err {
-			return nil, NewErrTransport(err)
+			return nil, MakeErrTransport(err)
 		}
 		port = strconv.Itoa(portnum)
 	} else {
@@ -574,7 +574,7 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 
 	hosts, err := net.LookupHost(uri.Hostname())
 	if nil != err {
-		return nil, NewErrTransport(err)
+		return nil, MakeErrTransport(err)
 	}
 
 	uri = &url.URL{

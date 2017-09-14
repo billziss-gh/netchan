@@ -69,7 +69,7 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 	case string:
 		uri, err = url.Parse(u)
 		if nil != err {
-			return NewErrArgument(err)
+			return MakeErrArgument(err)
 		}
 	case *url.URL:
 		uri = u
