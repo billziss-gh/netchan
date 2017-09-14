@@ -104,6 +104,5 @@ var (
 	ErrTransportMessageCorrupt error = NewErrTransport("netchan: transport message is corrupt")
 	ErrMarshalerNoChanEncoder  error = NewErrMarshaler("netchan: marshaler chan encoder not set")
 	ErrMarshalerNoChanDecoder  error = NewErrMarshaler("netchan: marshaler chan decoder not set")
-	ErrMarshalerRefInvalid     error = NewErrMarshaler("netchan: marshaler ref is invalid")
 	ErrMarshalerPanic          error = NewErrMarshaler("netchan: marshaler panic")
 )
