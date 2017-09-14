@@ -32,7 +32,7 @@ const (
 	netRedialDelayMax = 60 * time.Second
 )
 
-func netDial(address string, redialTimeout time.Duration,
+func netDial(uri *url.URL, redialTimeout time.Duration,
 	tlscfg *tls.Config) (conn net.Conn, err error) {
 	var deadline time.Time
 	var rnd *rand.Rand
@@ -43,9 +43,9 @@ func netDial(address string, redialTimeout time.Duration,
 
 	for delay := netRedialDelayMin; ; delay *= 2 {
 		if nil == tlscfg {
-			conn, err = net.Dial("tcp", address)
+			conn, err = net.Dial("tcp", uri.Host)
 		} else {
-			conn, err = tls.Dial("tcp", address, tlscfg)
+			conn, err = tls.Dial("tcp", uri.Host, tlscfg)
 		}
 
 		if nil == err || 0 == redialTimeout {
@@ -225,7 +225,9 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 
 	if nil == self.conn {
 		self.mux.Unlock()
-		conn, err := netDial(self.owner.uri.Host, self.owner.transport.cfg.RedialTimeout,
+		conn, err := self.owner.transport.dial(
+			self.owner.uri,
+			self.owner.transport.cfg.RedialTimeout,
 			self.owner.transport.tlscfg)
 		self.mux.Lock()
 		if nil != err {
@@ -389,6 +391,7 @@ type netTransport struct {
 	tlscfg    *tls.Config
 	recver    func(link Link) error
 	sender    func(link Link) error
+	dial      func(uri *url.URL, redialTimeout time.Duration, tlscfg *tls.Config) (net.Conn, error)
 	mux       sync.Mutex
 	done      bool
 	listen    net.Listener
@@ -423,6 +426,7 @@ func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, cfg *Config,
 		uri:       uri,
 		cfg:       cfg,
 		tlscfg:    tlscfg,
+		dial:      netDial,
 		mlink:     make(map[string]*netMultiLink),
 	}
 }
@@ -470,8 +474,8 @@ func (self *netTransport) Listen() error {
 }
 
 func (self *netTransport) Connect(uri *url.URL) (string, Link, error) {
-	if (nil == self.tlscfg && "tcp" != self.uri.Scheme) ||
-		(nil != self.tlscfg && "tls" != self.uri.Scheme) {
+	if (nil == self.tlscfg && "tcp" != uri.Scheme) ||
+		(nil != self.tlscfg && "tls" != uri.Scheme) {
 		return "", nil, ErrTransportInvalid
 	}
 
