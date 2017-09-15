@@ -107,7 +107,13 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 		 */
 	}
 
-	return self.connect(id, link, vchan, echan)
+	err = self.connect(id, link, vchan, echan)
+
+	if nil != link {
+		link.Dereference()
+	}
+
+	return err
 }
 
 func (self *connector) connect(id string, link Link, vchan reflect.Value, echan chan error) error {
@@ -149,7 +155,8 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 		self.conmap[link] = info
 		info.slist[0].Chan.Interface().(chan struct{}) <- struct{}{}
 
-		link.Open()
+		link.Reference()
+		link.Activate()
 	} else {
 		self.conmap[link] = info
 		info.slist[0].Chan.Interface().(chan struct{}) <- struct{}{}
@@ -167,6 +174,8 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	info := self.conmap[link]
 	for i, s := range info.slist {
 		if s.Chan == vchan {
+			link.Dereference()
+
 			info.slist = append(info.slist[:i], info.slist[i+1:]...)
 			info.ilist = append(info.ilist[:i], info.ilist[i+1:]...)
 			info.elist = append(info.elist[:i], info.elist[i+1:]...)

@@ -189,7 +189,9 @@ type Message struct {
 // Link is useful to users implementing a new Transport.
 type Link interface {
 	Sigchan() chan struct{}
-	Open()
+	Reference()
+	Dereference()
+	Activate()
 	Recv() (id string, vmsg reflect.Value, err error)
 	Send(id string, vmsg reflect.Value) (err error)
 }

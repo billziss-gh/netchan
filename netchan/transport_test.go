@@ -109,8 +109,8 @@ func testTransport(t *testing.T, transport Transport, scheme string) {
 		t.Errorf("Connect: incorrect id: %v", id)
 	}
 
-	link.Open()
-	link.Open()
+	link.Activate()
+	link.Activate()
 
 	<-trs.done
 }
@@ -235,7 +235,7 @@ func testTransportIdle(t *testing.T, transport Transport, scheme string) {
 		panic(err)
 	}
 
-	link.Open()
+	link.Activate()
 
 	<-trs.done
 }
@@ -304,7 +304,7 @@ func testTransportRedial(t *testing.T, transport Transport, scheme string) {
 		panic(err)
 	}
 
-	link.Open()
+	link.Activate()
 
 	<-trs.done
 

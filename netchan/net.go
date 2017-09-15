@@ -181,7 +181,15 @@ func (self *netLink) Sigchan() chan struct{} {
 	return self.sigchan
 }
 
-func (self *netLink) Open() {
+func (self *netLink) Reference() {
+	self.owner.gcref()
+}
+
+func (self *netLink) Dereference() {
+	self.owner.gcderef()
+}
+
+func (self *netLink) Activate() {
 	self.mux.Lock()
 	defer self.mux.Unlock()
 
@@ -208,6 +216,7 @@ func (self *netLink) reset(done bool) {
 		self.conn.Close()
 		self.conn = nil
 		self.idleTimeout = 0
+		self.owner.gcderef()
 	}
 
 	if done {
@@ -226,6 +235,7 @@ func (self *netLink) accept(conn net.Conn) *netLink {
 
 	self.conn = conn
 	self.cond.Signal()
+	self.owner.gcref()
 
 	return self
 }
@@ -253,6 +263,7 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 			self.conn = conn
 			self.idleTimeout = self.owner.transport.cfg.IdleTimeout
 			self.cond.Signal()
+			self.owner.gcref()
 		} else {
 			conn.Close()
 		}
@@ -352,6 +363,7 @@ type netMultiLink struct {
 	uri       *url.URL
 	index     uint32
 	link      []*netLink
+	refcnt    int32
 }
 
 func newNetMultiLink(transport *netTransport, uri *url.URL) *netMultiLink {
@@ -387,6 +399,21 @@ func (self *netMultiLink) accept(conn net.Conn) *netLink {
 func (self *netMultiLink) choose() *netLink {
 	index := int(atomic.AddUint32(&self.index, +1))
 	return self.link[index%len(self.link)]
+}
+
+func (self *netMultiLink) gcref() {
+	atomic.AddInt32(&self.refcnt, +1)
+}
+
+func (self *netMultiLink) gcderef() {
+	refcnt := atomic.AddInt32(&self.refcnt, -1)
+	if 0 == refcnt {
+		go self.transport.gc(self)
+	}
+}
+
+func (self *netMultiLink) gcisref() bool {
+	return 0 != atomic.LoadInt32(&self.refcnt)
 }
 
 func (self *netMultiLink) linkString(link *netLink) string {
@@ -563,12 +590,13 @@ func (self *netTransport) accepter() {
 		}
 
 		link := mlink.accept(conn)
+		mlink.gcderef()
 		if nil == link {
 			conn.Close()
 			continue
 		}
 
-		link.Open()
+		link.Activate()
 	}
 }
 
@@ -614,7 +642,24 @@ func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
 		self.mlink[uristr] = mlink
 	}
 
+	mlink.gcref()
+
 	return mlink, nil
+}
+
+func (self *netTransport) gc(mlink *netMultiLink) {
+	self.mux.Lock()
+	defer self.mux.Unlock()
+
+	/*
+	 * We take care to gcref() this link in connect() while holding the mux.
+	 * This ensures that gcisref() will check for a reference in a safe manner.
+	 */
+
+	if !mlink.gcisref() {
+		delete(self.mlink, mlink.uri.String())
+		mlink.close()
+	}
 }
 
 var _ Transport = RegisterTransport("tcp", NewNetTransport(
