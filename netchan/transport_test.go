@@ -14,8 +14,6 @@ package netchan
 
 import (
 	"crypto/tls"
-	"io"
-	"net"
 	"net/url"
 	"reflect"
 	"sync/atomic"
@@ -180,11 +178,6 @@ func newTestTransportIdleRecverSender(
 func (self *testTransportIdleRecverSender) transportRecver(link Link) error {
 	id, vmsg, err := link.Recv()
 	if nil != err {
-		err := err.(Err).Nested()
-		if io.EOF != err && !err.(net.Error).Timeout() {
-			self.t.Errorf("Recver: unexpected error %#v", err)
-		}
-
 		if 2 == atomic.AddUint32(&self.rcnt, 1) {
 			close(self.done)
 		}
@@ -238,6 +231,8 @@ func testTransportIdle(t *testing.T, transport Transport, scheme string) {
 	link.Activate()
 
 	<-trs.done
+
+	link.Dereference()
 }
 
 func TestTcpTransportIdle(t *testing.T) {
@@ -252,6 +247,11 @@ func TestTcpTransportIdle(t *testing.T) {
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
+		// transport must have garbage collected its links now!
+		if 0 != len(transport.(*netTransport).mlink) {
+			t.Errorf("netTransport GC fail: len(mlink): expect %v, got %v",
+				0, len(transport.(*netTransport).mlink))
+		}
 	}()
 
 	testTransportIdle(t, transport, "tcp")
