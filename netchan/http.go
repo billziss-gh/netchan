@@ -229,11 +229,13 @@ func (self *httpTransport) serverRecv(w http.ResponseWriter, r *http.Request) {
 
 	hj, ok := w.(http.Hijacker)
 	if !ok {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
 	conn, _, err := hj.Hijack()
 	if nil != err {
+		http.Error(w, "", http.StatusInternalServerError)
 		return
 	}
 
