@@ -78,9 +78,14 @@
 //
 // Transports
 //
-// This package comes with a number of default transports: tcp, tls. It is
-// possible to add transports by implementing the Transport and Link
-// interfaces.
+// This package comes with a number of builtin transports:
+//     tcp      plain TCP transport
+//     tls      secure TLS (SSL) transport
+//     http     sockets over HTTP (similar to net/rpc protocol)
+//     https    sockets over HTTPS (similar to net/rpc protocol)
+//
+// It is possible to add transports by implementing the Transport and
+// Link interfaces.
 package netchan
 
 import (
