@@ -106,11 +106,11 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 	oldlink, ok := self.lnkmap[ichan]
 	if !ok {
 		if nil == link {
-			return ErrArgumentNotConnected
+			return ErrConnectorChanNotConnected
 		}
 	} else {
 		if nil != link {
-			return ErrArgumentConnected
+			return ErrConnectorChanConnected
 		}
 
 		link = oldlink
