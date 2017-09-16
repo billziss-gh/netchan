@@ -156,6 +156,24 @@ func TestTlsTransport(t *testing.T) {
 	testTransport(t, transport, "tls")
 }
 
+func TestHttpTransport(t *testing.T) {
+	marshaler := NewGobMarshaler()
+	transport := NewHttpTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "http",
+			Host:   ":25000",
+		},
+		nil,
+		nil)
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testTransport(t, transport, "http")
+}
+
 type testTransportIdleRecverSender struct {
 	id   string
 	msg  string

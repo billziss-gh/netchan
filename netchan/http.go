@@ -81,15 +81,17 @@ func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.Serve
 	if "" == port {
 		if "http" == uri.Scheme {
 			port = "80"
-		} else {
+		} else if "https" == uri.Scheme {
 			port = "443"
 		}
 	}
 
-	uri = &url.URL{
-		Scheme: uri.Scheme,
-		Host:   net.JoinHostPort(uri.Hostname(), port),
-		Path:   uri.Path,
+	if nil != uri {
+		uri = &url.URL{
+			Scheme: uri.Scheme,
+			Host:   net.JoinHostPort(uri.Hostname(), port),
+			Path:   uri.Path,
+		}
 	}
 
 	return &httpTransport{
@@ -119,11 +121,7 @@ func (self *httpTransport) Listen() error {
 		return ErrTransportClosed
 	}
 
-	if nil == self.uri {
-		return nil
-	}
-
-	if !self.listen {
+	if !self.listen && nil != self.uri {
 		path := self.uri.Path
 		if "" == path {
 			path = "/"
@@ -134,27 +132,46 @@ func (self *httpTransport) Listen() error {
 		serveMux := self.serveMux
 		if nil == serveMux {
 			serveMux = http.NewServeMux()
+			serveMux.HandleFunc(path, self.serverRecv)
+
 			server := &http.Server{
 				Addr:      self.uri.Host,
 				TLSConfig: self.tlscfg,
 				Handler:   serveMux,
 			}
 
-			var err error
-			if "http" == self.uri.Scheme {
-				err = server.ListenAndServe()
-			} else {
-				err = server.ListenAndServeTLS("", "")
-			}
-			if nil != err {
-				return err
+			/*
+			 * The proper way to do this would be to first Listen() and then call
+			 * Server.Serve() or Server.ServeTLS() in a goroutine. This way we
+			 * could check for Listen() errors. Unfortunately Go 1.8 lacks
+			 * Server.ServeTLS() so we follow a different approach.
+			 *
+			 * We use Server.ListenAndServe() or Server.ListenAndServeTLS(),
+			 * in a goroutine and we wait momentarily to see if we get any errors.
+			 * This is clearly a hack and it should be changed in the future when
+			 * Server.ServeTLS() becomes available.
+			 */
+
+			echan := make(chan error, 1)
+			go func() {
+				if "http" == self.uri.Scheme {
+					echan <- server.ListenAndServe()
+				} else {
+					echan <- server.ListenAndServeTLS("", "")
+				}
+			}()
+
+			select {
+			case err := <-echan:
+				return MakeErrTransport(err)
+			case <-time.After(100 * time.Millisecond):
 			}
 
 			self.server = server
 			self.serveMux = serveMux
+		} else {
+			serveMux.HandleFunc(path, self.serverRecv)
 		}
-
-		serveMux.HandleFunc(path, self.serverRecv)
 
 		self.listen = true
 	}
@@ -170,7 +187,7 @@ func (self *httpTransport) Connect(uri *url.URL) (string, Link, error) {
 
 	var path, id string
 	index := strings.LastIndex(uri.Path, "/")
-	if 0 < index {
+	if 0 <= index {
 		path = uri.Path[:index+1]
 		id = uri.Path[index+1:]
 	}
