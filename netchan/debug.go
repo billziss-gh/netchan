@@ -39,4 +39,5 @@ func initDebugFlags() uint {
 }
 
 var debugFlags = initDebugFlags()
-var debugLog = []func(string, ...interface{}){nil, debugLogFunc}[debugFlags&1]
+var msgDebugLog = []func(string, ...interface{}){nil, debugLogFunc}[debugFlags&1]
+var gcDebugLog = []func(string, ...interface{}){nil, debugLogFunc}[(debugFlags&2)>>1]

@@ -659,6 +659,9 @@ func (self *netTransport) gc(mlink *netMultiLink) {
 	if !mlink.gcisref() {
 		delete(self.mlink, mlink.uri.String())
 		mlink.close()
+		if nil != gcDebugLog {
+			gcDebugLog("GC: %v", mlink.uri)
+		}
 	}
 }
 

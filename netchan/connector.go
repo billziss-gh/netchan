@@ -238,12 +238,12 @@ outer:
 				continue outer
 			}
 
-			if nil != debugLog {
-				debugLog("%v Send(id=%#v, vmsg=%#v)", link, ilist[i], vmsg)
+			if nil != msgDebugLog {
+				msgDebugLog("%v Send(id=%#v, vmsg=%#v)", link, ilist[i], vmsg)
 			}
 			err := link.Send(ilist[i], vmsg)
-			if nil != debugLog {
-				debugLog("%v Send = (err=%#v)", link, err)
+			if nil != msgDebugLog {
+				msgDebugLog("%v Send = (err=%#v)", link, err)
 			}
 			if nil == err {
 				atomic.AddUint32(&self.statSend, 1)
