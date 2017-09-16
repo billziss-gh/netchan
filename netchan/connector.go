@@ -79,27 +79,22 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 		panic(ErrArgumentInvalid)
 	}
 
-	var id string
-	var link Link
-	if nil != uri {
-		var err error
-		err = self.transport.Listen()
-		if nil != err {
-			return err
-		}
+	if nil == uri {
+		return self.connect("", nil, vchan, echan)
+	}
 
-		id, link, err = self.transport.Connect(uri)
-		if nil != err {
-			return err
-		}
+	err = self.transport.Listen()
+	if nil != err {
+		return err
+	}
+
+	id, link, err := self.transport.Connect(uri)
+	if nil != err {
+		return err
 	}
 
 	err = self.connect(id, link, vchan, echan)
-
-	if nil != link {
-		link.Dereference()
-	}
-
+	link.Dereference()
 	return err
 }
 
