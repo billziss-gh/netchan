@@ -92,6 +92,23 @@ func TestGobMarshaler(t *testing.T) {
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
 }
 
+func TestJsonMarshaler(t *testing.T) {
+	coder := &testMarshalerCoder{newWeakmap()}
+
+	marshaler := NewJsonMarshaler()
+	marshaler.SetChanEncoder(coder)
+	marshaler.SetChanDecoder(coder)
+
+	marshaler.RegisterType(testData{})
+
+	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
+
+	testMarshalerRoundtrip(t, marshaler, "ichan", make(chan struct{}))
+
+	td := testData{10, "ten", make(chan string)}
+	testMarshalerRoundtrip(t, marshaler, "10ten", td)
+}
+
 func TestRefEncodeDecode(t *testing.T) {
 	w0 := weakref{42, 43, 44}
 	s := refEncode(w0)
