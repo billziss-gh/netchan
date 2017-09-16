@@ -1,5 +1,5 @@
 /*
- * monitor_test.go
+ * stats_test.go
  *
  * Copyright 2017 Bill Zissimopoulos
  */
@@ -17,9 +17,10 @@ import (
 	"strconv"
 	"sync"
 	"testing"
+	"time"
 )
 
-func TestMonitor(t *testing.T) {
+func testStats(t *testing.T, publisher Publisher, connector Connector) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -27,7 +28,7 @@ func TestMonitor(t *testing.T) {
 	for i := range pchan {
 		pchan[i] = make(chan string)
 
-		err := Publish("chan"+strconv.Itoa(i), pchan[i])
+		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
@@ -36,7 +37,7 @@ func TestMonitor(t *testing.T) {
 	for i := range cchan {
 		cchan[i] = make(chan string)
 
-		err := Connect(
+		err := connector.Connect(
 			&url.URL{
 				Scheme: "tcp",
 				Host:   "127.0.0.1",
@@ -79,34 +80,53 @@ func TestMonitor(t *testing.T) {
 	}
 
 	for i := range pchan {
-		Unpublish("chan"+strconv.Itoa(i), pchan[i])
+		publisher.Unpublish("chan"+strconv.Itoa(i), pchan[i])
 	}
 
-	pubmon := DefaultPublisher.(Monitor)
-	for _, name := range pubmon.StatNames() {
+	pubstats := publisher.(Stats)
+	for _, name := range pubstats.StatNames() {
 		switch name {
 		case "Recv":
-			if pubmon.Stat(name) != 100 {
+			if pubstats.Stat(name) != 100 {
 				t.Errorf("unexpected %v stat", name)
 			}
 		default:
-			if pubmon.Stat(name) != 0 {
+			if pubstats.Stat(name) != 0 {
 				t.Errorf("unexpected %v stat", name)
 			}
 		}
 	}
 
-	conmon := DefaultConnector.(Monitor)
-	for _, name := range conmon.StatNames() {
+	constats := connector.(Stats)
+	for _, name := range constats.StatNames() {
 		switch name {
 		case "Send":
-			if conmon.Stat(name) != 100 {
+			if constats.Stat(name) != 100 {
 				t.Errorf("unexpected %v stat", name)
 			}
 		default:
-			if conmon.Stat(name) != 0 {
+			if constats.Stat(name) != 0 {
 				t.Errorf("unexpected %v stat", name)
 			}
 		}
 	}
+}
+
+func TestStats(t *testing.T) {
+	marshaler := NewGobMarshaler()
+	transport := NewNetTransport(
+		marshaler,
+		&url.URL{
+			Scheme: "tcp",
+			Host:   ":25000",
+		},
+		nil)
+	publisher := NewPublisher(transport)
+	connector := NewConnector(transport)
+	defer func() {
+		transport.Close()
+		time.Sleep(100 * time.Millisecond)
+	}()
+
+	testStats(t, publisher, connector)
 }
