@@ -92,19 +92,6 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 		if nil != err {
 			return err
 		}
-
-		/*
-		 * At this point Transport.Connect() has allocated a link and may have allocated
-		 * additional resources. Ideally we would not want the connect() operation below
-		 * to fail. Unfortunately there is still the possibility of getting an already
-		 * connected channel, which we must treat as an error.
-		 *
-		 * Although we could check for that possibility before the Transport.Connect()
-		 * call, to do this without race conditions we would have to hold the conmux lock
-		 * over Transport.Connect() which is a potentially slow call. So we choose the
-		 * least worse evil, which is to sometimes fail the connect() operation after a
-		 * successful Transport.Connect().
-		 */
 	}
 
 	err = self.connect(id, link, vchan, echan)
@@ -145,24 +132,21 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 	}
 
 	if !found {
-		self.addsigchan(link, &info)
-
 		info.slist = append(info.slist,
 			reflect.SelectCase{Dir: reflect.SelectRecv, Chan: vchan})
 		info.ilist = append(info.ilist, id)
 		info.elist = append(info.elist, echan)
 
+		self.lnkmap[ichan] = link
 		self.conmap[link] = info
-		info.slist[0].Chan.Interface().(chan struct{}) <- struct{}{}
+		link.Sigchan() <- struct{}{}
 
 		link.Reference()
 		link.Activate()
 	} else {
 		self.conmap[link] = info
-		info.slist[0].Chan.Interface().(chan struct{}) <- struct{}{}
+		link.Sigchan() <- struct{}{}
 	}
-
-	self.lnkmap[ichan] = link
 
 	return nil
 }
@@ -180,7 +164,11 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 			info.ilist = append(info.ilist[:i], info.ilist[i+1:]...)
 			info.elist = append(info.elist[:i], info.elist[i+1:]...)
 
-			self.conmap[link] = info
+			if 0 == len(info.slist) {
+				delete(self.conmap, link)
+			} else {
+				self.conmap[link] = info
+			}
 			delete(self.lnkmap, vchan.Interface())
 
 			return
@@ -188,39 +176,26 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	}
 }
 
-func (self *connector) addsigchan(link Link, info *coninfo) {
-	if nil == info.slist {
-		info.slist = append(info.slist,
-			reflect.SelectCase{
-				Dir:  reflect.SelectRecv,
-				Chan: reflect.ValueOf(link.Sigchan()),
-			})
-		info.ilist = append(info.ilist, "")
-		info.elist = append(info.elist, nil)
-	}
-}
-
 func (self *connector) sender(link Link) error {
-	self.conmux.Lock()
-	info := self.conmap[link]
-	self.addsigchan(link, &info)
-	self.conmap[link] = info
-	self.conmux.Unlock()
+	sigchan := link.Sigchan()
+	vsigsel := reflect.SelectCase{
+		Dir:  reflect.SelectRecv,
+		Chan: reflect.ValueOf(link.Sigchan()),
+	}
 
 outer:
 	for {
 		// make a copy so that we can safely use it outside the read lock
 		self.conmux.RLock()
 		info := self.conmap[link]
-		slist := append([]reflect.SelectCase(nil), info.slist...)
-		ilist := append([]string(nil), info.ilist...)
-		elist := append([]chan error(nil), info.elist...)
+		slist := append([]reflect.SelectCase{vsigsel}, info.slist...)
+		ilist := append([]string{""}, info.ilist...)
+		elist := append([]chan error{nil}, info.elist...)
 		self.conmux.RUnlock()
 
 		for {
 			i, vmsg, ok := reflect.Select(slist)
 			if 0 == i {
-				sigchan := slist[0].Chan.Interface().(chan struct{})
 			drain:
 				for {
 					select {
