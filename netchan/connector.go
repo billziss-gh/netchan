@@ -181,6 +181,7 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 			info.elist = append(info.elist[:i], info.elist[i+1:]...)
 
 			self.conmap[link] = info
+			delete(self.lnkmap, vchan.Interface())
 
 			return
 		}
