@@ -43,7 +43,7 @@ func (self *gobMarshaler) SetChanDecoder(chanDec ChanDecoder) {
 }
 
 func (self *gobMarshaler) Marshal(
-	link Link, id string, vmsg reflect.Value) (buf []byte, err error) {
+	link Link, id string, vmsg reflect.Value, hdrlen int) (buf []byte, err error) {
 	defer func() {
 		if r := recover(); nil != r {
 			buf = nil
@@ -56,7 +56,7 @@ func (self *gobMarshaler) Marshal(
 	}()
 
 	wrt := &bytes.Buffer{}
-	wrt.Write(make([]byte, 4))
+	wrt.Write(make([]byte, hdrlen))
 	enc := gob.NewEncoder(wrt)
 	enc.SetNetgobEncoder(&gobMarshalerNetgobEncoder{self.chanEnc, link})
 
@@ -78,7 +78,7 @@ func (self *gobMarshaler) Marshal(
 }
 
 func (self *gobMarshaler) Unmarshal(
-	link Link, buf []byte) (id string, vmsg reflect.Value, err error) {
+	link Link, buf []byte, hdrlen int) (id string, vmsg reflect.Value, err error) {
 	defer func() {
 		if r := recover(); nil != r {
 			id = ""
@@ -91,8 +91,7 @@ func (self *gobMarshaler) Unmarshal(
 		}
 	}()
 
-	rdr := bytes.NewBuffer(buf)
-	rdr.Read(make([]byte, 4))
+	rdr := bytes.NewBuffer(buf[hdrlen:])
 	dec := gob.NewDecoder(rdr)
 	dec.SetNetgobDecoder(&gobMarshalerNetgobDecoder{self.chanDec, link})
 

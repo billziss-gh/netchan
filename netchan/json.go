@@ -45,7 +45,7 @@ func (self *jsonMarshaler) SetChanDecoder(chanDec ChanDecoder) {
 }
 
 func (self *jsonMarshaler) Marshal(
-	link Link, id string, vmsg reflect.Value) (buf []byte, err error) {
+	link Link, id string, vmsg reflect.Value, hdrlen int) (buf []byte, err error) {
 	defer func() {
 		if r := recover(); nil != r {
 			buf = nil
@@ -69,7 +69,7 @@ func (self *jsonMarshaler) Marshal(
 }
 
 func (self *jsonMarshaler) Unmarshal(
-	link Link, buf []byte) (id string, vmsg reflect.Value, err error) {
+	link Link, buf []byte, hdrlen int) (id string, vmsg reflect.Value, err error) {
 	defer func() {
 		if r := recover(); nil != r {
 			id = ""

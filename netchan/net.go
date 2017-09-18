@@ -30,6 +30,8 @@ import (
 const (
 	netRedialDelayMin = 3 * time.Second
 	netRedialDelayMax = 60 * time.Second
+
+	netMsgHdrLen = 4
 )
 
 func netDial(uri *url.URL, redialTimeout time.Duration,
@@ -92,14 +94,14 @@ func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 		conn.SetReadDeadline(time.Now().Add(idleTimeout))
 	}
 
-	buf := [4]byte{}
+	buf := [netMsgHdrLen]byte{}
 	_, err := io.ReadFull(conn, buf[:])
 	if nil != err {
 		return nil, MakeErrTransport(err)
 	}
 
 	n := int(buf[0]) | (int(buf[1]) << 8) | (int(buf[2]) << 16) | (int(buf[3]) << 24)
-	if 4 > n || configMaxMsgSize < n {
+	if netMsgHdrLen > n || configMaxMsgSize < n {
 		return nil, ErrTransportMessageCorrupt
 	}
 
@@ -109,7 +111,7 @@ func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 	}
 
 	msg := make([]byte, n)
-	_, err = io.ReadFull(conn, msg[4:])
+	_, err = io.ReadFull(conn, msg[netMsgHdrLen:])
 	if nil != err {
 		return nil, MakeErrTransport(err)
 	}
@@ -124,7 +126,7 @@ func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 
 func netWriteMsg(conn net.Conn, idleTimeout time.Duration, msg []byte) error {
 	n := len(msg)
-	if 4 > n || configMaxMsgSize < n {
+	if netMsgHdrLen > n || configMaxMsgSize < n {
 		return ErrTransportMessageCorrupt
 	}
 
@@ -301,7 +303,7 @@ func (self *netLink) Recv() (id string, vmsg reflect.Value, err error) {
 		return
 	}
 
-	id, vmsg, err = self.owner.transport.marshaler.Unmarshal(self, buf)
+	id, vmsg, err = self.owner.transport.marshaler.Unmarshal(self, buf, netMsgHdrLen)
 	if nil != err {
 		// do not reset the link
 		return
@@ -316,7 +318,7 @@ func (self *netLink) Send(id string, vmsg reflect.Value) (err error) {
 		return
 	}
 
-	buf, err := self.owner.transport.marshaler.Marshal(self, id, vmsg)
+	buf, err := self.owner.transport.marshaler.Marshal(self, id, vmsg, netMsgHdrLen)
 	if nil != err {
 		// do not reset the link
 		return

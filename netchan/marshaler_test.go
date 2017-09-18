@@ -49,12 +49,12 @@ func (self *testMarshalerCoder) ChanDecode(link Link, ichan interface{}, buf []b
 
 func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 interface{}) {
 	vmsg0 := reflect.ValueOf(msg0)
-	buf, err := marshaler.Marshal(nil, id0, vmsg0)
+	buf, err := marshaler.Marshal(nil, id0, vmsg0, netMsgHdrLen)
 	if nil != err {
 		panic(err)
 	}
 
-	id, vmsg, err := marshaler.Unmarshal(nil, buf)
+	id, vmsg, err := marshaler.Unmarshal(nil, buf, netMsgHdrLen)
 	if nil != err {
 		panic(err)
 	}

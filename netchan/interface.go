@@ -236,6 +236,6 @@ type Marshaler interface {
 	RegisterType(val interface{})
 	SetChanEncoder(chanEnc ChanEncoder)
 	SetChanDecoder(chanDec ChanDecoder)
-	Marshal(link Link, id string, vmsg reflect.Value) (buf []byte, err error)
-	Unmarshal(link Link, buf []byte) (id string, vmsg reflect.Value, err error)
+	Marshal(link Link, id string, vmsg reflect.Value, hdrlen int) (buf []byte, err error)
+	Unmarshal(link Link, buf []byte, hdrlen int) (id string, vmsg reflect.Value, err error)
 }
