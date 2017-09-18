@@ -20,11 +20,6 @@ import (
 	"github.com/billziss-gh/netjson/json"
 )
 
-type jsonMessage struct {
-	Id  string      `json:"i"`
-	Msg interface{} `json:"m"`
-}
-
 type jsonMarshaler struct {
 	chanEnc ChanEncoder
 	chanDec ChanDecoder
