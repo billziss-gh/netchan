@@ -64,12 +64,23 @@ func testMarshalerRoundtrip(t *testing.T, marshaler Marshaler, id0 string, msg0 
 		t.Errorf("incorrect id: expect %v, got %v", id0, id)
 	}
 
+	if reflect.Ptr == vmsg0.Kind() {
+		msg0 = vmsg0.Elem().Interface()
+		msg = vmsg.Elem().Interface()
+	}
+
 	if msg0 != msg {
 		t.Errorf("incorrect msg: expect %v, got %v", msg0, msg)
 	}
 }
 
 type testData struct {
+	I int
+	S string
+	C chan string
+}
+
+type testRefData struct {
 	I int
 	S string
 	C chan string
@@ -83,6 +94,7 @@ func TestGobMarshaler(t *testing.T) {
 	marshaler.SetChanDecoder(coder)
 
 	marshaler.RegisterType(testData{})
+	marshaler.RegisterType(&testRefData{})
 
 	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
 
@@ -91,6 +103,9 @@ func TestGobMarshaler(t *testing.T) {
 
 	td := testData{10, "ten", make(chan string)}
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
+
+	trd := testRefData{10, "ten", make(chan string)}
+	testMarshalerRoundtrip(t, marshaler, "10ten", &trd)
 }
 
 func TestJsonMarshaler(t *testing.T) {
@@ -101,6 +116,7 @@ func TestJsonMarshaler(t *testing.T) {
 	marshaler.SetChanDecoder(coder)
 
 	marshaler.RegisterType(testData{})
+	marshaler.RegisterType(&testRefData{})
 
 	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
 
@@ -109,6 +125,9 @@ func TestJsonMarshaler(t *testing.T) {
 
 	td := testData{10, "ten", make(chan string)}
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
+
+	trd := testRefData{10, "ten", make(chan string)}
+	testMarshalerRoundtrip(t, marshaler, "10ten", &trd)
 }
 
 func TestRefEncodeDecode(t *testing.T) {
