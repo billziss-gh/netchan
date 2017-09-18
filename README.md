@@ -49,13 +49,15 @@ related to the connected channel.
 
 ## Marshaling
 
-This package uses the netgob format in order to transport messages. The
-netgob format is implemented by the netgob package
-(https://github.com/billziss-gh/netgob) and is an extension of the
-standard gob format that also allows for channels to be encoded/decoded.
-This package takes advantage of the netgob functionality and encodes
-channels into references that can later be decoded and reconstructed on
-a different machine.
+This package encodes/decodes messages using one of the following
+builtin encoding formats. These builtin formats can also be used to
+encode channels into references that can later be decoded and
+reconstructed on a different machine.
+
+- netgob: extension of the standard gob format that also allows for
+channels to be encoded/decoded (https://github.com/billziss-gh/netgob)
+- netjson: extension of the standard json format that also allows for
+channels to be encoded/decoded (https://github.com/billziss-gh/netjson)
 
 Channels that are marshaled in this way are also implicitly published
 and connected. When a message that is being sent contains a channel, a
