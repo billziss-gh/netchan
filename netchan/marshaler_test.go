@@ -87,6 +87,7 @@ func TestGobMarshaler(t *testing.T) {
 	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
 
 	testMarshalerRoundtrip(t, marshaler, "ichan", make(chan struct{}))
+	testMarshalerRoundtrip(t, marshaler, "ichan", make(chan error))
 
 	td := testData{10, "ten", make(chan string)}
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
@@ -104,6 +105,7 @@ func TestJsonMarshaler(t *testing.T) {
 	testMarshalerRoundtrip(t, marshaler, "42", "fortytwo")
 
 	testMarshalerRoundtrip(t, marshaler, "ichan", make(chan struct{}))
+	testMarshalerRoundtrip(t, marshaler, "ichan", make(chan error))
 
 	td := testData{10, "ten", make(chan string)}
 	testMarshalerRoundtrip(t, marshaler, "10ten", td)
