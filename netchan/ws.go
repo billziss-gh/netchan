@@ -16,45 +16,96 @@ package netchan
 
 import (
 	"crypto/tls"
-	"fmt"
+	"net"
 	"net/http"
 	"net/url"
-	"reflect"
-	//"github.com/gorilla/websocket"
+	"time"
+
+	"github.com/gorilla/websocket"
 )
 
-type wsLink struct {
+var wsTransportOptab = netOptab{
+	wsDial,
+	wsRemoteAddr,
+	wsReadMsg,
+	wsWriteMsg,
+	wsClose,
 }
 
-func (self *wsLink) Sigchan() chan struct{} {
+func wsDial(transport *netTransport, uri *url.URL) (conn interface{}, err error) {
+	dialer := websocket.Dialer{
+		NetDial: func(network, addr string) (net.Conn, error) {
+			conn, err := netDial(transport, &url.URL{
+				Scheme: network,
+				Host:   addr,
+			})
+			if nil != err {
+				return nil, err
+			}
+			return conn.(net.Conn), nil
+		},
+	}
+
+	conn, _, err = dialer.Dial(uri.String(), nil)
+	return
+}
+
+func wsRemoteAddr(conn0 interface{}) string {
+	conn := conn0.(*websocket.Conn)
+
+	return conn.RemoteAddr().String()
+}
+
+func wsReadMsg(conn0 interface{}, idleTimeout time.Duration) ([]byte, error) {
+	conn := conn0.(*websocket.Conn)
+
+	if 0 != idleTimeout {
+		// net.Conn does not have "idle" deadline, so emulate with read deadline on message length
+		conn.SetReadDeadline(time.Now().Add(idleTimeout))
+	}
+
+	_, msg, err := conn.ReadMessage()
+	if nil != err {
+		return nil, MakeErrTransport(err)
+	}
+
+	return msg, nil
+}
+
+func wsWriteMsg(conn0 interface{}, idleTimeout time.Duration, msg []byte) error {
+	conn := conn0.(*websocket.Conn)
+
+	n := len(msg)
+	if configMaxMsgSize < n {
+		return ErrTransportMessageCorrupt
+	}
+
+	if 0 != idleTimeout {
+		// extend read deadline to allow enough time for message to be written
+		conn.SetReadDeadline(time.Now().Add(idleTimeout))
+	}
+
+	err := conn.WriteMessage(websocket.BinaryMessage, msg)
+	if nil != err {
+		return MakeErrTransport(err)
+	}
+
+	if 0 != idleTimeout {
+		// extend the "idle" deadline as we just got a message
+		conn.SetReadDeadline(time.Now().Add(idleTimeout))
+	}
+
 	return nil
 }
 
-func (self *wsLink) Reference() {
-}
+func wsClose(conn0 interface{}) error {
+	conn := conn0.(*websocket.Conn)
 
-func (self *wsLink) Dereference() {
+	return conn.Close()
 }
-
-func (self *wsLink) Activate() {
-}
-
-func (self *wsLink) Recv() (id string, vmsg reflect.Value, err error) {
-	return
-}
-
-func (self *wsLink) Send(id string, vmsg reflect.Value) (err error) {
-	return
-}
-
-func (self *wsLink) String() string {
-	return ""
-}
-
-var _ Link = (*wsLink)(nil)
-var _ fmt.Stringer = (*wsLink)(nil)
 
 type wsTransport struct {
+	httpTransport
 }
 
 func NewWsTransport(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
@@ -67,27 +118,12 @@ func NewWsTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMu
 	return nil
 }
 
-func (self *wsTransport) SetChanEncoder(chanEnc ChanEncoder) {
-}
-
-func (self *wsTransport) SetChanDecoder(chanDec ChanDecoder) {
-}
-
-func (self *wsTransport) SetRecver(recver func(link Link) error) {
-}
-
-func (self *wsTransport) SetSender(sender func(link Link) error) {
-}
-
 func (self *wsTransport) Listen() error {
 	return nil
 }
 
 func (self *wsTransport) Connect(uri *url.URL) (string, Link, error) {
 	return "", nil, nil
-}
-
-func (self *wsTransport) Close() {
 }
 
 var _ Transport = (*wsTransport)(nil)
