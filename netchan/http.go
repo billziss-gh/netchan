@@ -119,11 +119,8 @@ func (self *httpTransport) init(marshaler Marshaler, uri *url.URL, serveMux *htt
 }
 
 func (self *httpTransport) Listen() error {
-	if nil != self.uri {
-		if (nil == self.tlscfg && "http" != self.uri.Scheme) ||
-			(nil != self.tlscfg && "http" != self.uri.Scheme) {
-			return ErrTransportInvalid
-		}
+	if "" == self.uri.Port() {
+		return ErrTransportInvalid
 	}
 
 	self.mux.Lock()
@@ -165,7 +162,7 @@ func (self *httpTransport) Listen() error {
 
 			echan := make(chan error, 1)
 			go func() {
-				if "http" == self.uri.Scheme {
+				if nil == self.tlscfg {
 					echan <- server.ListenAndServe()
 				} else {
 					echan <- server.ListenAndServeTLS("", "")
@@ -191,8 +188,7 @@ func (self *httpTransport) Listen() error {
 }
 
 func (self *httpTransport) Connect(uri *url.URL) (string, Link, error) {
-	if (nil == self.tlscfg && "http" != uri.Scheme) ||
-		(nil != self.tlscfg && "https" != uri.Scheme) {
+	if uri.Scheme != self.uri.Scheme {
 		return "", nil, ErrTransportInvalid
 	}
 

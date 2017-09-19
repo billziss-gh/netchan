@@ -132,12 +132,29 @@ func NewWsTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMu
 }
 
 func (self *wsTransport) init(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
-	cfg *Config, tlscfg *tls.Config) Transport {
+	cfg *Config, tlscfg *tls.Config) {
 
 	(&self.httpTransport).init(marshaler, uri, serveMux, cfg, tlscfg)
 
+	if nil != uri {
+		port := uri.Port()
+		if "" == port {
+			if "ws" == uri.Scheme {
+				port = "80"
+			} else if "wss" == uri.Scheme {
+				port = "443"
+			}
+		}
+
+		uri = &url.URL{
+			Scheme: uri.Scheme,
+			Host:   net.JoinHostPort(uri.Hostname(), port),
+			Path:   uri.Path,
+		}
+	}
+
 	self.handler = self.wsHandler
-	return nil
+	self.uri = uri
 }
 
 func (self *wsTransport) wsHandler(w http.ResponseWriter, r *http.Request) {

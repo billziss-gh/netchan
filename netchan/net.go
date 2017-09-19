@@ -538,9 +538,7 @@ func (self *netTransport) SetSender(sender func(link Link) error) {
 }
 
 func (self *netTransport) Listen() error {
-	if (nil == self.tlscfg && "tcp" != self.uri.Scheme) ||
-		(nil != self.tlscfg && "tls" != self.uri.Scheme) ||
-		"" == self.uri.Port() {
+	if "" == self.uri.Port() {
 		return ErrTransportInvalid
 	}
 
@@ -564,8 +562,7 @@ func (self *netTransport) Listen() error {
 }
 
 func (self *netTransport) Connect(uri *url.URL) (string, Link, error) {
-	if (nil == self.tlscfg && "tcp" != uri.Scheme) ||
-		(nil != self.tlscfg && "tls" != uri.Scheme) {
+	if uri.Scheme != self.uri.Scheme {
 		return "", nil, ErrTransportInvalid
 	}
 
