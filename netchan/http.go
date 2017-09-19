@@ -59,7 +59,7 @@ type httpTransport struct {
 
 func NewHttpTransport(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config) Transport {
-	return NewHttpTransportTLS(marshaler, uri, nil, cfg, nil)
+	return NewHttpTransportTLS(marshaler, uri, serveMux, cfg, nil)
 }
 
 func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
