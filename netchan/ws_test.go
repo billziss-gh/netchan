@@ -21,7 +21,7 @@ import (
 )
 
 func TestWsTransport(t *testing.T) {
-	marshaler := NewGobMarshaler()
+	marshaler := NewJsonMarshaler()
 	transport := NewWsTransport(
 		marshaler,
 		&url.URL{
