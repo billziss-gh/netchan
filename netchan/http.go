@@ -67,36 +67,40 @@ type httpTransport struct {
 	listen   bool
 }
 
+// NewHttpTransport creates a new HTTP Transport. The URI to listen to
+// should have the syntax http://[HOST]:PORT/PATH. If a ServeMux is
+// provided, it will be used instead of creating a new HTTP server.
 func NewHttpTransport(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config) Transport {
-	return NewHttpTransportTLS(marshaler, uri, serveMux, cfg, nil)
+	self := &httpTransport{}
+	self.init(marshaler, uri, serveMux, cfg, nil)
+	return self
 }
 
+// NewHttpTransportTLS creates a new HTTPS Transport. The URI to listen to
+// should have the syntax https://[HOST]:PORT/PATH. If a ServeMux is
+// provided, it will be used instead of creating a new HTTPS server.
 func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config, tlscfg *tls.Config) Transport {
-	if nil != cfg {
-		cfg = cfg.Clone()
-	} else {
-		cfg = &Config{}
-	}
-	if 0 == cfg.MaxLinks {
-		cfg.MaxLinks = configMaxLinks
-	}
+	self := &httpTransport{}
+	self.init(marshaler, uri, serveMux, cfg, tlscfg)
+	return self
+}
 
-	if nil != tlscfg {
-		tlscfg = tlscfg.Clone()
-	}
-
-	port := uri.Port()
-	if "" == port {
-		if "http" == uri.Scheme {
-			port = "80"
-		} else if "https" == uri.Scheme {
-			port = "443"
-		}
-	}
+func (self *httpTransport) init(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
+	cfg *Config, tlscfg *tls.Config) {
+	(&self.netTransport).init(marshaler, &url.URL{}, cfg, tlscfg)
 
 	if nil != uri {
+		port := uri.Port()
+		if "" == port {
+			if "http" == uri.Scheme {
+				port = "80"
+			} else if "https" == uri.Scheme {
+				port = "443"
+			}
+		}
+
 		uri = &url.URL{
 			Scheme: uri.Scheme,
 			Host:   net.JoinHostPort(uri.Hostname(), port),
@@ -104,17 +108,9 @@ func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.Serve
 		}
 	}
 
-	return &httpTransport{
-		netTransport: netTransport{
-			marshaler: marshaler,
-			uri:       uri,
-			cfg:       cfg,
-			tlscfg:    tlscfg,
-			optab:     &httpTransportOptab,
-			mlink:     make(map[string]*netMultiLink),
-		},
-		serveMux: serveMux,
-	}
+	self.optab = &httpTransportOptab
+	self.uri = uri
+	self.serveMux = serveMux
 }
 
 func (self *httpTransport) Listen() error {

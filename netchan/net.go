@@ -462,13 +462,13 @@ func (self *netMultiLink) linkString(link *netLink) string {
 }
 
 type netTransport struct {
+	optab     *netOptab
 	marshaler Marshaler
 	uri       *url.URL
 	cfg       *Config
 	tlscfg    *tls.Config
 	recver    func(link Link) error
 	sender    func(link Link) error
-	optab     *netOptab
 	mux       sync.Mutex
 	done      bool
 	listen    net.Listener
@@ -478,13 +478,22 @@ type netTransport struct {
 // NewNetTransport creates a new TCP Transport. The URI to listen to
 // should have the syntax tcp://[HOST]:PORT.
 func NewNetTransport(marshaler Marshaler, uri *url.URL, cfg *Config) Transport {
-	return NewNetTransportTLS(marshaler, uri, cfg, nil)
+	self := &netTransport{}
+	self.init(marshaler, uri, cfg, nil)
+	return self
 }
 
 // NewNetTransportTLS creates a new TLS Transport. The URI to listen to
 // should have the syntax tls://[HOST]:PORT.
 func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, cfg *Config,
 	tlscfg *tls.Config) Transport {
+	self := &netTransport{}
+	self.init(marshaler, uri, cfg, tlscfg)
+	return self
+}
+
+func (self *netTransport) init(marshaler Marshaler, uri *url.URL, cfg *Config,
+	tlscfg *tls.Config) {
 	if nil != cfg {
 		cfg = cfg.Clone()
 	} else {
@@ -503,14 +512,12 @@ func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, cfg *Config,
 		Host:   uri.Host,
 	}
 
-	return &netTransport{
-		marshaler: marshaler,
-		uri:       uri,
-		cfg:       cfg,
-		tlscfg:    tlscfg,
-		optab:     &netTransportOptab,
-		mlink:     make(map[string]*netMultiLink),
-	}
+	self.optab = &netTransportOptab
+	self.marshaler = marshaler
+	self.uri = uri
+	self.cfg = cfg
+	self.tlscfg = tlscfg
+	self.mlink = make(map[string]*netMultiLink)
 }
 
 func (self *netTransport) SetChanEncoder(chanEnc ChanEncoder) {
