@@ -5,7 +5,7 @@
     "tasks": [
         {
             "taskName": "build",
-            "command": "go build -v ./...",
+            "command": "go build -tags=websocket -v ./...",
             "type": "shell"
             "group": {
                 "kind": "build",
