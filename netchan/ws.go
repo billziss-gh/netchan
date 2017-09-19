@@ -153,6 +153,7 @@ func (self *wsTransport) init(marshaler Marshaler, uri *url.URL, serveMux *http.
 		}
 	}
 
+	self.optab = &wsTransportOptab
 	self.handler = self.wsHandler
 	self.uri = uri
 }
