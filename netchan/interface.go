@@ -88,6 +88,8 @@
 //     tls      secure TLS (SSL) transport
 //     http     sockets over HTTP (similar to net/rpc protocol)
 //     https    sockets over HTTPS (similar to net/rpc protocol)
+//     ws       (optional) WebSocket transport
+//     wss      (optional) secure WebSocket transport
 //
 // It is possible to add transports by implementing the Transport and
 // Link interfaces.
