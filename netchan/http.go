@@ -23,11 +23,21 @@ import (
 	"time"
 )
 
-func httpDial(uri *url.URL, redialTimeout time.Duration, tlscfg *tls.Config) (net.Conn, error) {
-	conn, err := netDial(uri, redialTimeout, tlscfg)
+var httpTransportOptab = netOptab{
+	httpDial,
+	netRemoteAddr,
+	netReadMsg,
+	netWriteMsg,
+	netClose,
+}
+
+func httpDial(transport *netTransport, uri *url.URL) (interface{}, error) {
+	conn0, err := netDial(transport, uri)
 	if nil != err {
 		return nil, err
 	}
+
+	conn := conn0.(net.Conn)
 
 	_, err = conn.Write([]byte("CONNECT " + uri.Path + " HTTP/1.0\r\n\r\n"))
 	if nil != err {
@@ -100,7 +110,7 @@ func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.Serve
 			uri:       uri,
 			cfg:       cfg,
 			tlscfg:    tlscfg,
-			dial:      httpDial,
+			optab:     &httpTransportOptab,
 			mlink:     make(map[string]*netMultiLink),
 		},
 		serveMux: serveMux,
@@ -132,7 +142,7 @@ func (self *httpTransport) Listen() error {
 		serveMux := self.serveMux
 		if nil == serveMux {
 			serveMux = http.NewServeMux()
-			serveMux.HandleFunc(path, self.serverRecv)
+			serveMux.HandleFunc(path, self.handler)
 
 			server := &http.Server{
 				Addr:      self.uri.Host,
@@ -170,7 +180,7 @@ func (self *httpTransport) Listen() error {
 			self.server = server
 			self.serveMux = serveMux
 		} else {
-			serveMux.HandleFunc(path, self.serverRecv)
+			serveMux.HandleFunc(path, self.handler)
 		}
 
 		self.listen = true
@@ -221,7 +231,7 @@ func (self *httpTransport) Close() {
 	}
 }
 
-func (self *httpTransport) serverRecv(w http.ResponseWriter, r *http.Request) {
+func (self *httpTransport) handler(w http.ResponseWriter, r *http.Request) {
 	if "CONNECT" != r.Method {
 		http.Error(w, "netchan: only CONNECT is allowed", http.StatusMethodNotAllowed)
 		return

@@ -34,23 +34,46 @@ const (
 	netMsgHdrLen = 4
 )
 
-func netDial(uri *url.URL, redialTimeout time.Duration,
-	tlscfg *tls.Config) (conn net.Conn, err error) {
+type netOptab struct {
+	dial       func(transport *netTransport, uri *url.URL) (interface{}, error)
+	remoteAddr func(conn0 interface{}) string
+	readMsg    func(conn0 interface{}, idleTimeout time.Duration) ([]byte, error)
+	writeMsg   func(conn0 interface{}, idleTimeout time.Duration, msg []byte) error
+	close      func(conn0 interface{}) error
+}
+
+var netTransportOptab = netOptab{
+	netDial,
+	netRemoteAddr,
+	netReadMsg,
+	netWriteMsg,
+	netClose,
+}
+
+func netListen(transport *netTransport, address string) (net.Listener, error) {
+	if nil == transport.tlscfg {
+		return net.Listen("tcp", address)
+	} else {
+		return tls.Listen("tcp", address, transport.tlscfg)
+	}
+}
+
+func netDial(transport *netTransport, uri *url.URL) (conn interface{}, err error) {
 	var deadline time.Time
 	var rnd *rand.Rand
 
-	if 0 != redialTimeout {
-		deadline = time.Now().Add(redialTimeout)
+	if 0 != transport.cfg.RedialTimeout {
+		deadline = time.Now().Add(transport.cfg.RedialTimeout)
 	}
 
 	for delay := netRedialDelayMin; ; delay *= 2 {
-		if nil == tlscfg {
+		if nil == transport.tlscfg {
 			conn, err = net.Dial("tcp", uri.Host)
 		} else {
-			conn, err = tls.Dial("tcp", uri.Host, tlscfg)
+			conn, err = tls.Dial("tcp", uri.Host, transport.tlscfg)
 		}
 
-		if nil == err || 0 == redialTimeout {
+		if nil == err || 0 == transport.cfg.RedialTimeout {
 			break
 		}
 
@@ -80,15 +103,15 @@ func netDial(uri *url.URL, redialTimeout time.Duration,
 	return
 }
 
-func netListen(address string, tlscfg *tls.Config) (net.Listener, error) {
-	if nil == tlscfg {
-		return net.Listen("tcp", address)
-	} else {
-		return tls.Listen("tcp", address, tlscfg)
-	}
+func netRemoteAddr(conn0 interface{}) string {
+	conn := conn0.(net.Conn)
+
+	return conn.RemoteAddr().String()
 }
 
-func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
+func netReadMsg(conn0 interface{}, idleTimeout time.Duration) ([]byte, error) {
+	conn := conn0.(net.Conn)
+
 	if 0 != idleTimeout {
 		// net.Conn does not have "idle" deadline, so emulate with read deadline on message length
 		conn.SetReadDeadline(time.Now().Add(idleTimeout))
@@ -124,7 +147,9 @@ func netReadMsg(conn net.Conn, idleTimeout time.Duration) ([]byte, error) {
 	return msg, nil
 }
 
-func netWriteMsg(conn net.Conn, idleTimeout time.Duration, msg []byte) error {
+func netWriteMsg(conn0 interface{}, idleTimeout time.Duration, msg []byte) error {
+	conn := conn0.(net.Conn)
+
 	n := len(msg)
 	if netMsgHdrLen > n || configMaxMsgSize < n {
 		return ErrTransportMessageCorrupt
@@ -153,6 +178,12 @@ func netWriteMsg(conn net.Conn, idleTimeout time.Duration, msg []byte) error {
 	return nil
 }
 
+func netClose(conn0 interface{}) error {
+	conn := conn0.(net.Conn)
+
+	return conn.Close()
+}
+
 func sigchanclose(sigchan chan struct{}) (ok bool) {
 	defer func() {
 		recover()
@@ -163,18 +194,23 @@ func sigchanclose(sigchan chan struct{}) (ok bool) {
 }
 
 type netLink struct {
-	owner       *netMultiLink // access to link uri and transport
+	transport   *netTransport
+	owner       *netMultiLink
 	sigchan     chan struct{} // signal channel; closed when link is closed
 	mux         sync.Mutex    // guards following fields
 	cond        sync.Cond     // guards condition (self.done || nil != self.conn); uses mux
-	conn        net.Conn      // network connection; nil when not connected
+	conn        interface{}   // network connection; nil when not connected
 	idleTimeout time.Duration // idle timeout for dialed (not accepted) connections
 	init        bool          // true: recver/sender goroutines active
 	done        bool          // true: link has been closed
 }
 
 func newNetLink(owner *netMultiLink) *netLink {
-	self := &netLink{owner: owner, sigchan: make(chan struct{}, 0x7fffffff)}
+	self := &netLink{
+		transport: owner.transport,
+		owner:     owner,
+		sigchan:   make(chan struct{}, 0x7fffffff),
+	}
 	self.cond.L = &self.mux
 	return self
 }
@@ -215,7 +251,7 @@ func (self *netLink) reset(done bool) {
 	}
 
 	if nil != self.conn {
-		self.conn.Close()
+		self.transport.optab.close(self.conn)
 		self.conn = nil
 		self.idleTimeout = 0
 		self.owner.gcderef()
@@ -227,7 +263,7 @@ func (self *netLink) reset(done bool) {
 	}
 }
 
-func (self *netLink) accept(conn net.Conn) *netLink {
+func (self *netLink) accept(conn interface{}) *netLink {
 	self.mux.Lock()
 	defer self.mux.Unlock()
 
@@ -242,7 +278,7 @@ func (self *netLink) accept(conn net.Conn) *netLink {
 	return self
 }
 
-func (self *netLink) connect() (net.Conn, time.Duration, error) {
+func (self *netLink) connect() (interface{}, time.Duration, error) {
 	self.mux.Lock()
 	defer self.mux.Unlock()
 
@@ -252,10 +288,7 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 
 	if nil == self.conn {
 		self.mux.Unlock()
-		conn, err := self.owner.transport.dial(
-			self.owner.uri,
-			self.owner.transport.cfg.RedialTimeout,
-			self.owner.transport.tlscfg)
+		conn, err := self.transport.optab.dial(self.transport, self.owner.uri)
 		self.mux.Lock()
 		if nil != err {
 			return nil, 0, MakeErrTransport(err)
@@ -263,18 +296,18 @@ func (self *netLink) connect() (net.Conn, time.Duration, error) {
 
 		if nil == self.conn {
 			self.conn = conn
-			self.idleTimeout = self.owner.transport.cfg.IdleTimeout
+			self.idleTimeout = self.transport.cfg.IdleTimeout
 			self.cond.Signal()
 			self.owner.gcref()
 		} else {
-			conn.Close()
+			netClose(conn)
 		}
 	}
 
 	return self.conn, self.idleTimeout, nil
 }
 
-func (self *netLink) waitconn() (net.Conn, time.Duration, error) {
+func (self *netLink) waitconn() (interface{}, time.Duration, error) {
 	self.mux.Lock()
 	defer self.mux.Unlock()
 
@@ -297,13 +330,13 @@ func (self *netLink) Recv() (id string, vmsg reflect.Value, err error) {
 		return
 	}
 
-	buf, err := netReadMsg(conn, idleTimeout)
+	buf, err := self.transport.optab.readMsg(conn, idleTimeout)
 	if nil != err {
 		self.reset(false)
 		return
 	}
 
-	id, vmsg, err = self.owner.transport.marshaler.Unmarshal(self, buf, netMsgHdrLen)
+	id, vmsg, err = self.transport.marshaler.Unmarshal(self, buf, netMsgHdrLen)
 	if nil != err {
 		// do not reset the link
 		return
@@ -318,13 +351,13 @@ func (self *netLink) Send(id string, vmsg reflect.Value) (err error) {
 		return
 	}
 
-	buf, err := self.owner.transport.marshaler.Marshal(self, id, vmsg, netMsgHdrLen)
+	buf, err := self.transport.marshaler.Marshal(self, id, vmsg, netMsgHdrLen)
 	if nil != err {
 		// do not reset the link
 		return
 	}
 
-	err = netWriteMsg(conn, idleTimeout, buf)
+	err = self.transport.optab.writeMsg(conn, idleTimeout, buf)
 	if nil != err {
 		self.reset(false)
 		return
@@ -335,7 +368,7 @@ func (self *netLink) Send(id string, vmsg reflect.Value) (err error) {
 
 func (self *netLink) recver() {
 	for {
-		err := self.owner.transport.recver(self)
+		err := self.transport.recver(self)
 		if ErrTransportClosed == err || self.done {
 			break
 		}
@@ -345,7 +378,7 @@ func (self *netLink) recver() {
 
 func (self *netLink) sender() {
 	for {
-		err := self.owner.transport.sender(self)
+		err := self.transport.sender(self)
 		if ErrTransportClosed == err || self.done {
 			break
 		}
@@ -387,7 +420,7 @@ func (self *netMultiLink) close() {
 	}
 }
 
-func (self *netMultiLink) accept(conn net.Conn) *netLink {
+func (self *netMultiLink) accept(conn interface{}) *netLink {
 	index := int(atomic.AddUint32(&self.index, +1))
 	for i := range self.link {
 		link := self.link[(i+index)%len(self.link)].accept(conn)
@@ -435,7 +468,7 @@ type netTransport struct {
 	tlscfg    *tls.Config
 	recver    func(link Link) error
 	sender    func(link Link) error
-	dial      func(uri *url.URL, redialTimeout time.Duration, tlscfg *tls.Config) (net.Conn, error)
+	optab     *netOptab
 	mux       sync.Mutex
 	done      bool
 	listen    net.Listener
@@ -475,7 +508,7 @@ func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, cfg *Config,
 		uri:       uri,
 		cfg:       cfg,
 		tlscfg:    tlscfg,
-		dial:      netDial,
+		optab:     &netTransportOptab,
 		mlink:     make(map[string]*netMultiLink),
 	}
 }
@@ -510,7 +543,7 @@ func (self *netTransport) Listen() error {
 	}
 
 	if nil == self.listen {
-		listen, err := netListen(self.uri.Host, self.tlscfg)
+		listen, err := netListen(self, self.uri.Host)
 		if nil != err {
 			return MakeErrTransport(err)
 		}
@@ -573,8 +606,8 @@ func (self *netTransport) accepter() {
 	}
 }
 
-func (self *netTransport) accept(conn net.Conn) error {
-	host, _, err := net.SplitHostPort(conn.RemoteAddr().String())
+func (self *netTransport) accept(conn interface{}) error {
+	host, _, err := net.SplitHostPort(self.optab.remoteAddr(conn))
 	if nil != err {
 		return err
 	}
