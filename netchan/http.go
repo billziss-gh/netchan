@@ -95,21 +95,19 @@ func (self *httpTransport) init(marshaler Marshaler, uri *url.URL, serveMux *htt
 
 	(&self.netTransport).init(marshaler, &url.URL{}, cfg, tlscfg)
 
-	if nil != uri {
-		port := uri.Port()
-		if "" == port {
-			if "http" == uri.Scheme {
-				port = "80"
-			} else if "https" == uri.Scheme {
-				port = "443"
-			}
+	port := uri.Port()
+	if "" == port {
+		if "http" == uri.Scheme {
+			port = "80"
+		} else if "https" == uri.Scheme {
+			port = "443"
 		}
+	}
 
-		uri = &url.URL{
-			Scheme: uri.Scheme,
-			Host:   net.JoinHostPort(uri.Hostname(), port),
-			Path:   uri.Path,
-		}
+	uri = &url.URL{
+		Scheme: uri.Scheme,
+		Host:   net.JoinHostPort(uri.Hostname(), port),
+		Path:   uri.Path,
 	}
 
 	self.optab = &httpTransportOptab
@@ -129,7 +127,7 @@ func (self *httpTransport) Listen() error {
 		return ErrTransportClosed
 	}
 
-	if !self.listen && nil != self.uri {
+	if !self.listen {
 		path := self.uri.Path
 		if "" == path {
 			path = "/"

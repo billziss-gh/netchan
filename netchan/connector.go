@@ -83,11 +83,6 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 		return self.connect("", nil, vchan, echan)
 	}
 
-	err = self.transport.Listen()
-	if nil != err {
-		return err
-	}
-
 	id, link, err := self.transport.Connect(uri)
 	if nil != err {
 		return err

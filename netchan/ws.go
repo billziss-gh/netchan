@@ -136,21 +136,19 @@ func (self *wsTransport) init(marshaler Marshaler, uri *url.URL, serveMux *http.
 
 	(&self.httpTransport).init(marshaler, uri, serveMux, cfg, tlscfg)
 
-	if nil != uri {
-		port := uri.Port()
-		if "" == port {
-			if "ws" == uri.Scheme {
-				port = "80"
-			} else if "wss" == uri.Scheme {
-				port = "443"
-			}
+	port := uri.Port()
+	if "" == port {
+		if "ws" == uri.Scheme {
+			port = "80"
+		} else if "wss" == uri.Scheme {
+			port = "443"
 		}
+	}
 
-		uri = &url.URL{
-			Scheme: uri.Scheme,
-			Host:   net.JoinHostPort(uri.Hostname(), port),
-			Path:   uri.Path,
-		}
+	uri = &url.URL{
+		Scheme: uri.Scheme,
+		Host:   net.JoinHostPort(uri.Hostname(), port),
+		Path:   uri.Path,
 	}
 
 	self.optab = &wsTransportOptab
