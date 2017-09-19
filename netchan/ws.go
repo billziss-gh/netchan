@@ -1,4 +1,4 @@
-// -build websocket
+// +build websocket
 
 /*
  * ws.go
@@ -108,22 +108,49 @@ type wsTransport struct {
 	httpTransport
 }
 
+// NewWsTransport creates a new websocket Transport. The URI to listen to
+// should have the syntax ws://[HOST]:PORT/PATH. If a ServeMux is
+// provided, it will be used instead of creating a new HTTP server.
 func NewWsTransport(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config) Transport {
-	return NewWsTransportTLS(marshaler, uri, serveMux, cfg, nil)
+
+	self := &wsTransport{}
+	self.init(marshaler, uri, serveMux, cfg, nil)
+	return self
 }
 
+// NewWsTransportTLS creates a new secure websocket Transport. The URI
+// to listen to should have the syntax wss://[HOST]:PORT/PATH. If a
+// ServeMux is provided, it will be used instead of creating a new HTTPS
+// server.
 func NewWsTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config, tlscfg *tls.Config) Transport {
+
+	self := &wsTransport{}
+	self.init(marshaler, uri, serveMux, cfg, tlscfg)
+	return self
+}
+
+func (self *wsTransport) init(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
+	cfg *Config, tlscfg *tls.Config) Transport {
+
+	(&self.httpTransport).init(marshaler, uri, serveMux, cfg, tlscfg)
+
+	self.handler = self.wsHandler
 	return nil
 }
 
-func (self *wsTransport) Listen() error {
-	return nil
-}
+func (self *wsTransport) wsHandler(w http.ResponseWriter, r *http.Request) {
+	upgrader := websocket.Upgrader{}
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if nil != err {
+		return
+	}
 
-func (self *wsTransport) Connect(uri *url.URL) (string, Link, error) {
-	return "", nil, nil
+	err = self.accept(conn)
+	if nil != err {
+		conn.Close()
+	}
 }
 
 var _ Transport = (*wsTransport)(nil)

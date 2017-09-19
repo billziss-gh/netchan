@@ -494,6 +494,7 @@ func NewNetTransportTLS(marshaler Marshaler, uri *url.URL, cfg *Config,
 
 func (self *netTransport) init(marshaler Marshaler, uri *url.URL, cfg *Config,
 	tlscfg *tls.Config) {
+
 	if nil != cfg {
 		cfg = cfg.Clone()
 	} else {

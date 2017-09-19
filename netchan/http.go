@@ -62,6 +62,7 @@ func httpDial(transport *netTransport, uri *url.URL) (interface{}, error) {
 
 type httpTransport struct {
 	netTransport
+	handler  func(w http.ResponseWriter, r *http.Request)
 	serveMux *http.ServeMux
 	server   *http.Server
 	listen   bool
@@ -72,6 +73,7 @@ type httpTransport struct {
 // provided, it will be used instead of creating a new HTTP server.
 func NewHttpTransport(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config) Transport {
+
 	self := &httpTransport{}
 	self.init(marshaler, uri, serveMux, cfg, nil)
 	return self
@@ -82,6 +84,7 @@ func NewHttpTransport(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux
 // provided, it will be used instead of creating a new HTTPS server.
 func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config, tlscfg *tls.Config) Transport {
+
 	self := &httpTransport{}
 	self.init(marshaler, uri, serveMux, cfg, tlscfg)
 	return self
@@ -89,6 +92,7 @@ func NewHttpTransportTLS(marshaler Marshaler, uri *url.URL, serveMux *http.Serve
 
 func (self *httpTransport) init(marshaler Marshaler, uri *url.URL, serveMux *http.ServeMux,
 	cfg *Config, tlscfg *tls.Config) {
+
 	(&self.netTransport).init(marshaler, &url.URL{}, cfg, tlscfg)
 
 	if nil != uri {
@@ -109,6 +113,7 @@ func (self *httpTransport) init(marshaler Marshaler, uri *url.URL, serveMux *htt
 	}
 
 	self.optab = &httpTransportOptab
+	self.handler = self.connectHandler
 	self.uri = uri
 	self.serveMux = serveMux
 }
@@ -227,7 +232,7 @@ func (self *httpTransport) Close() {
 	}
 }
 
-func (self *httpTransport) handler(w http.ResponseWriter, r *http.Request) {
+func (self *httpTransport) connectHandler(w http.ResponseWriter, r *http.Request) {
 	if "CONNECT" != r.Method {
 		http.Error(w, "netchan: only CONNECT is allowed", http.StatusMethodNotAllowed)
 		return
