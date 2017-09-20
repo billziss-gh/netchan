@@ -46,13 +46,19 @@ var (
 )
 
 func chat(src *session) {
+	errchan := make(chan error, 1)
+	netchan.Connect(nil, src.user, errchan)
+
+loop:
 	for {
-		msg := <-src.serv
-		if "" == msg.To {
-			sessionMux.Lock()
-			delete(sessionMap, src.name)
-			close(src.user)
-			sessionMux.Unlock()
+		var msg chatMsg
+		select {
+		case msg = <-src.serv:
+			if "" == msg.To {
+				break loop
+			}
+		case err := <-errchan:
+			log.Printf("error: %s\n", err)
 			break
 		}
 
@@ -64,6 +70,11 @@ func chat(src *session) {
 			dst.user <- msg
 		}
 	}
+
+	sessionMux.Lock()
+	delete(sessionMap, src.name)
+	close(src.user)
+	sessionMux.Unlock()
 }
 
 func run(login chan loginMsg) {
