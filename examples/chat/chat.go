@@ -25,33 +25,32 @@ import (
 	"github.com/billziss-gh/netchan/netchan"
 )
 
-type session struct {
-	Name       string
-	User, Serv chan sessionMsg
-}
-
 type loginMsg struct {
 	Name, Pass string
-	User       chan sessionMsg
-	Resp       chan chan sessionMsg
+	User       chan chatMsg
+	Resp       chan chan chatMsg
 }
 
-type sessionMsg struct {
+type chatMsg struct {
 	From, To, Text string
+}
+
+type session struct {
+	name       string
+	user, serv chan chatMsg
 }
 
 var (
 	sessionMux sync.RWMutex
 	sessionMap = make(map[string]*session)
-	login      = make(chan loginMsg, 64)
 )
 
 func chat(src *session) {
 	for {
-		msg := <-src.Serv
+		msg := <-src.serv
 		if "" == msg.To {
 			sessionMux.Lock()
-			delete(sessionMap, src.Name)
+			delete(sessionMap, src.name)
 			sessionMux.Unlock()
 			break
 		}
@@ -60,13 +59,13 @@ func chat(src *session) {
 		dst, ok := sessionMap[msg.To]
 		sessionMux.RUnlock()
 		if ok {
-			msg.From = src.Name
-			dst.User <- msg
+			msg.From = src.name
+			dst.user <- msg
 		}
 	}
 }
 
-func run() {
+func run(login chan loginMsg) {
 	for {
 		msg := <-login
 		if "" == msg.Name || nil == msg.User || nil == msg.Resp {
@@ -86,13 +85,13 @@ func run() {
 			src = &session{
 				msg.Name,
 				msg.User,
-				make(chan sessionMsg, 1),
+				make(chan chatMsg, 1),
 			}
 			sessionMap[msg.Name] = src
 			go chat(src)
 		}
 		sessionMux.Unlock()
-		msg.Resp <- src.Serv
+		msg.Resp <- src.serv
 
 		close(msg.Resp)
 	}
@@ -109,11 +108,14 @@ func main() {
 
 	marshaler := netchan.NewJsonMarshaler()
 	marshaler.RegisterType(loginMsg{})
+	marshaler.RegisterType(chatMsg{})
 	netchan.RegisterTransport("ws",
 		netchan.NewWsTransport(marshaler, uri, http.DefaultServeMux, nil))
 
+	login := make(chan loginMsg, 64)
 	err := netchan.Publish("login", login)
 	if nil == err {
+		go run(login)
 		err = http.ListenAndServe(":"+uri.Port(), nil)
 	}
 	if nil != err && http.ErrServerClosed != err {
