@@ -51,6 +51,7 @@ func chat(src *session) {
 		if "" == msg.To {
 			sessionMux.Lock()
 			delete(sessionMap, src.name)
+			close(src.user)
 			sessionMux.Unlock()
 			break
 		}
@@ -69,6 +70,12 @@ func run(login chan loginMsg) {
 	for {
 		msg := <-login
 		if "" == msg.Name || nil == msg.User || nil == msg.Resp {
+			if nil != msg.User {
+				close(msg.User)
+			}
+			if nil != msg.Resp {
+				close(msg.Resp)
+			}
 			continue
 		}
 		if msg.Name != msg.Pass { // "security" check
@@ -78,21 +85,18 @@ func run(login chan loginMsg) {
 			continue
 		}
 
-		var src *session
 		sessionMux.Lock()
 		src, ok := sessionMap[msg.Name]
-		if !ok {
-			src = &session{
-				msg.Name,
-				msg.User,
-				make(chan chatMsg, 1),
-			}
+		if ok {
+			close(src.user)
+			src.user = msg.User
+		} else {
+			src = &session{msg.Name, msg.User, make(chan chatMsg, 1)}
 			sessionMap[msg.Name] = src
-			go chat(src)
 		}
 		sessionMux.Unlock()
+		go chat(src)
 		msg.Resp <- src.serv
-
 		close(msg.Resp)
 	}
 }
