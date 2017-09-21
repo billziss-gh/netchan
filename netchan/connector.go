@@ -229,31 +229,33 @@ outer:
 }
 
 func (self *connector) ChanDecode(link Link,
-	ichan interface{}, buf []byte, accum map[interface{}]interface{}) error {
-	v := reflect.ValueOf(ichan).Elem()
+	vchan reflect.Value, buf []byte, accum map[interface{}]reflect.Value) error {
+	vchan = vchan.Elem()
 
 	var w weakref
 	copy(w[:], buf)
 
+	var c reflect.Value
 	if (weakref{}) != w {
-		if ic, ok := accum[w]; !ok {
-			c := reflect.MakeChan(v.Type(), 1)
-			v.Set(c)
+		var ok bool
+		c, ok = accum[w]
+		if !ok {
+			c = reflect.MakeChan(vchan.Type(), 1)
 			accum[w] = c
-		} else {
-			v.Set(ic.(reflect.Value))
 		}
 	} else {
-		v.Set(reflect.Zero(v.Type()))
+		c = reflect.Zero(vchan.Type())
 	}
+	vchan.Set(c)
 
 	return nil
 }
 
-func (self *connector) ChanDecodeAccum(link Link, accum map[interface{}]interface{}) error {
-	for iw, ic := range accum {
+func (self *connector) ChanDecodeAccum(link Link,
+	accum map[interface{}]reflect.Value) error {
+	for iw, c := range accum {
 		id := refEncode(iw.(weakref))
-		self.connect(id, link, ic.(reflect.Value), nil)
+		self.connect(id, link, c, nil)
 	}
 
 	return nil

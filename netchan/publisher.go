@@ -188,12 +188,13 @@ func (self *publisher) deliver(id string, vmsg reflect.Value, pubrnd *rand.Rand)
 }
 
 func (self *publisher) ChanEncode(link Link,
-	ichan interface{}, accum map[interface{}]interface{}) ([]byte, error) {
-	w := self.wchanmap.weakref(ichan)
+	vchan reflect.Value, accum map[interface{}]reflect.Value) ([]byte, error) {
+	w := self.wchanmap.weakref(vchan.Interface())
 	return w[:], nil
 }
 
-func (self *publisher) ChanEncodeAccum(link Link, accum map[interface{}]interface{}) error {
+func (self *publisher) ChanEncodeAccum(link Link,
+	accum map[interface{}]reflect.Value) error {
 	return nil
 }
 

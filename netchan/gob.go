@@ -58,7 +58,7 @@ func (self *gobMarshaler) Marshal(
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, hdrlen))
 	enc := gob.NewEncoder(wrt)
-	accum := make(map[interface{}]interface{})
+	accum := make(map[interface{}]reflect.Value)
 	enc.SetNetgobEncoder(&gobMarshalerNetgobEncoder{self.chanEnc, link, accum})
 
 	err = enc.Encode(id)
@@ -102,7 +102,7 @@ func (self *gobMarshaler) Unmarshal(
 
 	rdr := bytes.NewBuffer(buf[hdrlen:])
 	dec := gob.NewDecoder(rdr)
-	accum := make(map[interface{}]interface{})
+	accum := make(map[interface{}]reflect.Value)
 	dec.SetNetgobDecoder(&gobMarshalerNetgobDecoder{self.chanDec, link, accum})
 
 	err = dec.Decode(&id)
@@ -137,27 +137,27 @@ func (self *gobMarshaler) Unmarshal(
 type gobMarshalerNetgobEncoder struct {
 	chanEnc ChanEncoder
 	link    Link
-	accum   map[interface{}]interface{}
+	accum   map[interface{}]reflect.Value
 }
 
-func (self *gobMarshalerNetgobEncoder) NetgobEncode(i interface{}) ([]byte, error) {
+func (self *gobMarshalerNetgobEncoder) NetgobEncode(v reflect.Value) ([]byte, error) {
 	if nil == self.chanEnc {
 		return nil, ErrMarshalerNoChanEncoder
 	}
-	return self.chanEnc.ChanEncode(self.link, i, self.accum)
+	return self.chanEnc.ChanEncode(self.link, v, self.accum)
 }
 
 type gobMarshalerNetgobDecoder struct {
 	chanDec ChanDecoder
 	link    Link
-	accum   map[interface{}]interface{}
+	accum   map[interface{}]reflect.Value
 }
 
-func (self *gobMarshalerNetgobDecoder) NetgobDecode(i interface{}, buf []byte) error {
+func (self *gobMarshalerNetgobDecoder) NetgobDecode(v reflect.Value, buf []byte) error {
 	if nil == self.chanDec {
 		return ErrMarshalerNoChanDecoder
 	}
-	return self.chanDec.ChanDecode(self.link, i, buf, self.accum)
+	return self.chanDec.ChanDecode(self.link, v, buf, self.accum)
 }
 
 var _ Marshaler = (*gobMarshaler)(nil)
