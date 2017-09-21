@@ -59,7 +59,8 @@ func (self *jsonMarshaler) Marshal(
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, hdrlen))
 	enc := json.NewEncoder(wrt)
-	enc.SetNetjsonEncoder(&jsonMarshalerNetjsonEncoder{self.chanEnc, link})
+	accum := make(map[interface{}]interface{})
+	enc.SetNetjsonEncoder(&jsonMarshalerNetjsonEncoder{self.chanEnc, link, accum})
 
 	err = enc.Encode(id)
 	if nil != err {
@@ -84,6 +85,14 @@ func (self *jsonMarshaler) Marshal(
 		return
 	}
 
+	if nil != self.chanEnc {
+		err = self.chanEnc.ChanEncodeAccum(link, accum)
+		if nil != err {
+			err = MakeErrMarshaler(err)
+			return
+		}
+	}
+
 	buf = wrt.Bytes()
 	return
 }
@@ -104,7 +113,8 @@ func (self *jsonMarshaler) Unmarshal(
 
 	rdr := bytes.NewBuffer(buf[hdrlen:])
 	dec := json.NewDecoder(rdr)
-	dec.SetNetjsonDecoder(&jsonMarshalerNetjsonDecoder{self.chanDec, link})
+	accum := make(map[interface{}]interface{})
+	dec.SetNetjsonDecoder(&jsonMarshalerNetjsonDecoder{self.chanDec, link, accum})
 
 	err = dec.Decode(&id)
 	if nil != err {
@@ -135,6 +145,16 @@ func (self *jsonMarshaler) Unmarshal(
 		vmsg = reflect.Value{}
 		err = MakeErrMarshaler(err)
 		return
+	}
+
+	if nil != self.chanDec {
+		err = self.chanDec.ChanDecodeAccum(link, accum)
+		if nil != err {
+			id = ""
+			vmsg = reflect.Value{}
+			err = MakeErrMarshaler(err)
+			return
+		}
 	}
 
 	vmsg = reflect.ValueOf(msg).Elem()
@@ -189,25 +209,27 @@ var (
 type jsonMarshalerNetjsonEncoder struct {
 	chanEnc ChanEncoder
 	link    Link
+	accum   map[interface{}]interface{}
 }
 
 func (self *jsonMarshalerNetjsonEncoder) NetjsonEncode(i interface{}) ([]byte, error) {
 	if nil == self.chanEnc {
 		return nil, ErrMarshalerNoChanEncoder
 	}
-	return self.chanEnc.ChanEncode(self.link, i)
+	return self.chanEnc.ChanEncode(self.link, i, self.accum)
 }
 
 type jsonMarshalerNetjsonDecoder struct {
 	chanDec ChanDecoder
 	link    Link
+	accum   map[interface{}]interface{}
 }
 
 func (self *jsonMarshalerNetjsonDecoder) NetjsonDecode(i interface{}, buf []byte) error {
 	if nil == self.chanDec {
 		return ErrMarshalerNoChanDecoder
 	}
-	return self.chanDec.ChanDecode(self.link, i, buf)
+	return self.chanDec.ChanDecode(self.link, i, buf, self.accum)
 }
 
 var _ Marshaler = (*jsonMarshaler)(nil)

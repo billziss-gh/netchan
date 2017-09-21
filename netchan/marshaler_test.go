@@ -22,7 +22,8 @@ type testMarshalerCoder struct {
 	chanmap *weakmap
 }
 
-func (self *testMarshalerCoder) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
+func (self *testMarshalerCoder) ChanEncode(link Link,
+	ichan interface{}, accum map[interface{}]interface{}) ([]byte, error) {
 	w := self.chanmap.weakref(ichan)
 	if (weakref{}) == w {
 		return nil, errors.New("marshaler ref is invalid")
@@ -31,7 +32,13 @@ func (self *testMarshalerCoder) ChanEncode(link Link, ichan interface{}) ([]byte
 	return w[:], nil
 }
 
-func (self *testMarshalerCoder) ChanDecode(link Link, ichan interface{}, buf []byte) error {
+func (self *testMarshalerCoder) ChanEncodeAccum(link Link,
+	accum map[interface{}]interface{}) error {
+	return nil
+}
+
+func (self *testMarshalerCoder) ChanDecode(link Link,
+	ichan interface{}, buf []byte, accum map[interface{}]interface{}) error {
 	v := reflect.ValueOf(ichan).Elem()
 
 	var w weakref
@@ -44,6 +51,11 @@ func (self *testMarshalerCoder) ChanDecode(link Link, ichan interface{}, buf []b
 
 	v.Set(reflect.ValueOf(s))
 
+	return nil
+}
+
+func (self *testMarshalerCoder) ChanDecodeAccum(link Link,
+	accum map[interface{}]interface{}) error {
 	return nil
 }
 

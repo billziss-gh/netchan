@@ -58,7 +58,8 @@ func (self *gobMarshaler) Marshal(
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, hdrlen))
 	enc := gob.NewEncoder(wrt)
-	enc.SetNetgobEncoder(&gobMarshalerNetgobEncoder{self.chanEnc, link})
+	accum := make(map[interface{}]interface{})
+	enc.SetNetgobEncoder(&gobMarshalerNetgobEncoder{self.chanEnc, link, accum})
 
 	err = enc.Encode(id)
 	if nil != err {
@@ -71,6 +72,14 @@ func (self *gobMarshaler) Marshal(
 	if nil != err {
 		err = MakeErrMarshaler(err)
 		return
+	}
+
+	if nil != self.chanEnc {
+		err = self.chanEnc.ChanEncodeAccum(link, accum)
+		if nil != err {
+			err = MakeErrMarshaler(err)
+			return
+		}
 	}
 
 	buf = wrt.Bytes()
@@ -93,7 +102,8 @@ func (self *gobMarshaler) Unmarshal(
 
 	rdr := bytes.NewBuffer(buf[hdrlen:])
 	dec := gob.NewDecoder(rdr)
-	dec.SetNetgobDecoder(&gobMarshalerNetgobDecoder{self.chanDec, link})
+	accum := make(map[interface{}]interface{})
+	dec.SetNetgobDecoder(&gobMarshalerNetgobDecoder{self.chanDec, link, accum})
 
 	err = dec.Decode(&id)
 	if nil != err {
@@ -110,6 +120,16 @@ func (self *gobMarshaler) Unmarshal(
 		return
 	}
 
+	if nil != self.chanDec {
+		err = self.chanDec.ChanDecodeAccum(link, accum)
+		if nil != err {
+			id = ""
+			vmsg = reflect.Value{}
+			err = MakeErrMarshaler(err)
+			return
+		}
+	}
+
 	vmsg = reflect.ValueOf(msg)
 	return
 }
@@ -117,25 +137,27 @@ func (self *gobMarshaler) Unmarshal(
 type gobMarshalerNetgobEncoder struct {
 	chanEnc ChanEncoder
 	link    Link
+	accum   map[interface{}]interface{}
 }
 
 func (self *gobMarshalerNetgobEncoder) NetgobEncode(i interface{}) ([]byte, error) {
 	if nil == self.chanEnc {
 		return nil, ErrMarshalerNoChanEncoder
 	}
-	return self.chanEnc.ChanEncode(self.link, i)
+	return self.chanEnc.ChanEncode(self.link, i, self.accum)
 }
 
 type gobMarshalerNetgobDecoder struct {
 	chanDec ChanDecoder
 	link    Link
+	accum   map[interface{}]interface{}
 }
 
 func (self *gobMarshalerNetgobDecoder) NetgobDecode(i interface{}, buf []byte) error {
 	if nil == self.chanDec {
 		return ErrMarshalerNoChanDecoder
 	}
-	return self.chanDec.ChanDecode(self.link, i, buf)
+	return self.chanDec.ChanDecode(self.link, i, buf, self.accum)
 }
 
 var _ Marshaler = (*gobMarshaler)(nil)

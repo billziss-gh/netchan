@@ -228,21 +228,32 @@ outer:
 	}
 }
 
-func (self *connector) ChanDecode(link Link, ichan interface{}, buf []byte) error {
+func (self *connector) ChanDecode(link Link,
+	ichan interface{}, buf []byte, accum map[interface{}]interface{}) error {
 	v := reflect.ValueOf(ichan).Elem()
 
 	var w weakref
 	copy(w[:], buf)
 
 	if (weakref{}) != w {
-		u := reflect.MakeChan(v.Type(), 1)
-		v.Set(u)
-
-		id := refEncode(w)
-		self.connect(id, link, u, nil)
+		if ic, ok := accum[w]; !ok {
+			c := reflect.MakeChan(v.Type(), 1)
+			v.Set(c)
+			accum[w] = c
+		} else {
+			v.Set(ic.(reflect.Value))
+		}
 	} else {
-		u := reflect.Zero(v.Type())
-		v.Set(u)
+		v.Set(reflect.Zero(v.Type()))
+	}
+
+	return nil
+}
+
+func (self *connector) ChanDecodeAccum(link Link, accum map[interface{}]interface{}) error {
+	for iw, ic := range accum {
+		id := refEncode(iw.(weakref))
+		self.connect(id, link, ic.(reflect.Value), nil)
 	}
 
 	return nil

@@ -187,9 +187,14 @@ func (self *publisher) deliver(id string, vmsg reflect.Value, pubrnd *rand.Rand)
 	return
 }
 
-func (self *publisher) ChanEncode(link Link, ichan interface{}) ([]byte, error) {
+func (self *publisher) ChanEncode(link Link,
+	ichan interface{}, accum map[interface{}]interface{}) ([]byte, error) {
 	w := self.wchanmap.weakref(ichan)
 	return w[:], nil
+}
+
+func (self *publisher) ChanEncodeAccum(link Link, accum map[interface{}]interface{}) error {
+	return nil
 }
 
 func (self *publisher) StatNames() []string {
