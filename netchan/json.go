@@ -59,7 +59,7 @@ func (self *jsonMarshaler) Marshal(
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, hdrlen))
 	enc := json.NewEncoder(wrt)
-	accum := make(map[interface{}]reflect.Value)
+	accum := make(map[string]reflect.Value)
 	enc.SetNetjsonEncoder(&jsonMarshalerNetjsonEncoder{self.chanEnc, link, accum})
 
 	err = enc.Encode(id)
@@ -113,7 +113,7 @@ func (self *jsonMarshaler) Unmarshal(
 
 	rdr := bytes.NewBuffer(buf[hdrlen:])
 	dec := json.NewDecoder(rdr)
-	accum := make(map[interface{}]reflect.Value)
+	accum := make(map[string]reflect.Value)
 	dec.SetNetjsonDecoder(&jsonMarshalerNetjsonDecoder{self.chanDec, link, accum})
 
 	err = dec.Decode(&id)
@@ -209,7 +209,7 @@ var (
 type jsonMarshalerNetjsonEncoder struct {
 	chanEnc ChanEncoder
 	link    Link
-	accum   map[interface{}]reflect.Value
+	accum   map[string]reflect.Value
 }
 
 func (self *jsonMarshalerNetjsonEncoder) NetjsonEncode(v reflect.Value) ([]byte, error) {
@@ -222,7 +222,7 @@ func (self *jsonMarshalerNetjsonEncoder) NetjsonEncode(v reflect.Value) ([]byte,
 type jsonMarshalerNetjsonDecoder struct {
 	chanDec ChanDecoder
 	link    Link
-	accum   map[interface{}]reflect.Value
+	accum   map[string]reflect.Value
 }
 
 func (self *jsonMarshalerNetjsonDecoder) NetjsonDecode(v reflect.Value, buf []byte) error {

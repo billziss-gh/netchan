@@ -58,7 +58,7 @@ func (self *gobMarshaler) Marshal(
 	wrt := &bytes.Buffer{}
 	wrt.Write(make([]byte, hdrlen))
 	enc := gob.NewEncoder(wrt)
-	accum := make(map[interface{}]reflect.Value)
+	accum := make(map[string]reflect.Value)
 	enc.SetNetgobEncoder(&gobMarshalerNetgobEncoder{self.chanEnc, link, accum})
 
 	err = enc.Encode(id)
@@ -102,7 +102,7 @@ func (self *gobMarshaler) Unmarshal(
 
 	rdr := bytes.NewBuffer(buf[hdrlen:])
 	dec := gob.NewDecoder(rdr)
-	accum := make(map[interface{}]reflect.Value)
+	accum := make(map[string]reflect.Value)
 	dec.SetNetgobDecoder(&gobMarshalerNetgobDecoder{self.chanDec, link, accum})
 
 	err = dec.Decode(&id)
@@ -137,7 +137,7 @@ func (self *gobMarshaler) Unmarshal(
 type gobMarshalerNetgobEncoder struct {
 	chanEnc ChanEncoder
 	link    Link
-	accum   map[interface{}]reflect.Value
+	accum   map[string]reflect.Value
 }
 
 func (self *gobMarshalerNetgobEncoder) NetgobEncode(v reflect.Value) ([]byte, error) {
@@ -150,7 +150,7 @@ func (self *gobMarshalerNetgobEncoder) NetgobEncode(v reflect.Value) ([]byte, er
 type gobMarshalerNetgobDecoder struct {
 	chanDec ChanDecoder
 	link    Link
-	accum   map[interface{}]reflect.Value
+	accum   map[string]reflect.Value
 }
 
 func (self *gobMarshalerNetgobDecoder) NetgobDecode(v reflect.Value, buf []byte) error {

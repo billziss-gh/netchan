@@ -212,20 +212,16 @@ type Link interface {
 //
 // ChanEncoder is useful to users implementing a new Marshaler.
 type ChanEncoder interface {
-	ChanEncode(link Link,
-		vchan reflect.Value, accum map[interface{}]reflect.Value) ([]byte, error)
-	ChanEncodeAccum(link Link,
-		accum map[interface{}]reflect.Value) error
+	ChanEncode(link Link, vchan reflect.Value, accum map[string]reflect.Value) ([]byte, error)
+	ChanEncodeAccum(link Link, accum map[string]reflect.Value) error
 }
 
 // ChanDecoder is used to decode a marshaling reference into a channel.
 //
 // ChanDecoder is useful to users implementing a new Marshaler.
 type ChanDecoder interface {
-	ChanDecode(link Link,
-		vchan reflect.Value, buf []byte, accum map[interface{}]reflect.Value) error
-	ChanDecodeAccum(link Link,
-		accum map[interface{}]reflect.Value) error
+	ChanDecode(link Link, vchan reflect.Value, buf []byte, accum map[string]reflect.Value) error
+	ChanDecodeAccum(link Link, accum map[string]reflect.Value) error
 }
 
 // Transport is used to transport messages over a network.
