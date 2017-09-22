@@ -368,7 +368,7 @@ func (self *netLink) Send(id string, vmsg reflect.Value) (err error) {
 
 func (self *netLink) recver() {
 	for {
-		err := self.transport.recver(self)
+		err := self.transport.recver.Recver(self)
 		if ErrTransportClosed == err || self.done {
 			break
 		}
@@ -378,7 +378,7 @@ func (self *netLink) recver() {
 
 func (self *netLink) sender() {
 	for {
-		err := self.transport.sender(self)
+		err := self.transport.sender.Sender(self)
 		if ErrTransportClosed == err || self.done {
 			break
 		}
@@ -467,8 +467,8 @@ type netTransport struct {
 	uri       *url.URL
 	cfg       *Config
 	tlscfg    *tls.Config
-	recver    func(link Link) error
-	sender    func(link Link) error
+	recver    TransportRecver
+	sender    TransportSender
 	mux       sync.Mutex
 	done      bool
 	listen    net.Listener
@@ -521,19 +521,15 @@ func (self *netTransport) init(marshaler Marshaler, uri *url.URL, cfg *Config,
 	self.mlink = make(map[string]*netMultiLink)
 }
 
-func (self *netTransport) SetChanEncoder(chanEnc ChanEncoder) {
+func (self *netTransport) SetRecver(recver TransportRecver) {
+	chanEnc, _ := recver.(ChanEncoder)
 	self.marshaler.SetChanEncoder(chanEnc)
-}
-
-func (self *netTransport) SetChanDecoder(chanDec ChanDecoder) {
-	self.marshaler.SetChanDecoder(chanDec)
-}
-
-func (self *netTransport) SetRecver(recver func(link Link) error) {
 	self.recver = recver
 }
 
-func (self *netTransport) SetSender(sender func(link Link) error) {
+func (self *netTransport) SetSender(sender TransportSender) {
+	chanDec, _ := sender.(ChanDecoder)
+	self.marshaler.SetChanDecoder(chanDec)
 	self.sender = sender
 }
 

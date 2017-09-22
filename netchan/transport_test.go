@@ -41,7 +41,7 @@ func newTestTransportRecverSender(id string, msg string, t *testing.T) *testTran
 	}
 }
 
-func (self *testTransportRecverSender) transportRecver(link Link) error {
+func (self *testTransportRecverSender) Recver(link Link) error {
 	id, vmsg, err := link.Recv()
 	if nil != err {
 		if self.doneflag {
@@ -66,7 +66,7 @@ func (self *testTransportRecverSender) transportRecver(link Link) error {
 	return nil
 }
 
-func (self *testTransportRecverSender) transportSender(link Link) error {
+func (self *testTransportRecverSender) Sender(link Link) error {
 	err := link.Send(self.id, reflect.ValueOf(self.msg))
 	if nil != err {
 		self.t.Errorf("Sender: error %v", err)
@@ -82,8 +82,8 @@ func testTransport(t *testing.T, transport Transport, scheme string) {
 	id0 := "NAME"
 	msg := "42,43,44,45,46"
 	trs := newTestTransportRecverSender(id0, msg, t)
-	transport.SetRecver(trs.transportRecver)
-	transport.SetSender(trs.transportSender)
+	transport.SetRecver(trs)
+	transport.SetSender(trs)
 
 	err := transport.Listen()
 	if nil != err {
@@ -193,7 +193,7 @@ func newTestTransportIdleRecverSender(
 	}
 }
 
-func (self *testTransportIdleRecverSender) transportRecver(link Link) error {
+func (self *testTransportIdleRecverSender) Recver(link Link) error {
 	id, vmsg, err := link.Recv()
 	if nil != err {
 		if 2 == atomic.AddUint32(&self.rcnt, 1) {
@@ -213,7 +213,7 @@ func (self *testTransportIdleRecverSender) transportRecver(link Link) error {
 	return nil
 }
 
-func (self *testTransportIdleRecverSender) transportSender(link Link) error {
+func (self *testTransportIdleRecverSender) Sender(link Link) error {
 	err := link.Send(self.id, reflect.ValueOf(self.msg))
 	if nil != err {
 		self.t.Errorf("Sender: error %v", err)
@@ -229,8 +229,8 @@ func testTransportIdle(t *testing.T, transport Transport, scheme string) {
 	id0 := "NAME"
 	msg := "42,43,44,45,46"
 	trs := newTestTransportIdleRecverSender(id0, msg, t)
-	transport.SetRecver(trs.transportRecver)
-	transport.SetSender(trs.transportSender)
+	transport.SetRecver(trs)
+	transport.SetSender(trs)
 
 	err := transport.Listen()
 	if nil != err {
@@ -280,19 +280,19 @@ type testTransportRedialRecverSender struct {
 	done chan struct{}
 }
 
-func newtestTransportRedialRecverSender(t *testing.T) *testTransportRedialRecverSender {
+func newTestTransportRedialRecverSender(t *testing.T) *testTransportRedialRecverSender {
 	return &testTransportRedialRecverSender{
 		t,
 		make(chan struct{}),
 	}
 }
 
-func (self *testTransportRedialRecverSender) transportRecver(link Link) error {
+func (self *testTransportRedialRecverSender) Recver(link Link) error {
 	link.Recv()
 	return ErrTransportClosed
 }
 
-func (self *testTransportRedialRecverSender) transportSender(link Link) error {
+func (self *testTransportRedialRecverSender) Sender(link Link) error {
 	err := link.Send("id", reflect.ValueOf("msg"))
 	if nil == err {
 		self.t.Error("Sender: expect error, got nil")
@@ -304,9 +304,9 @@ func (self *testTransportRedialRecverSender) transportSender(link Link) error {
 
 func testTransportRedial(t *testing.T, transport Transport, scheme string) {
 	now := time.Now()
-	trs := newtestTransportRedialRecverSender(t)
-	transport.SetRecver(trs.transportRecver)
-	transport.SetSender(trs.transportSender)
+	trs := newTestTransportRedialRecverSender(t)
+	transport.SetRecver(trs)
+	transport.SetSender(trs)
 
 	err := transport.Listen()
 	if nil != err {

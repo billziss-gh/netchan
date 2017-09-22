@@ -52,8 +52,7 @@ func NewPublisher(transport Transport) Publisher {
 		pubmap:    make(map[string]pubinfo),
 		wchanmap:  newWeakmap(),
 	}
-	transport.SetChanEncoder(self)
-	transport.SetRecver(self.recver)
+	transport.SetRecver(self)
 	return self
 }
 
@@ -124,7 +123,7 @@ func (self *publisher) Unpublish(id string, ichan interface{}) {
 	}
 }
 
-func (self *publisher) recver(link Link) error {
+func (self *publisher) Recver(link Link) error {
 	pubrnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for {

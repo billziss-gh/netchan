@@ -52,8 +52,7 @@ func NewConnector(transport Transport) Connector {
 		conmap:    make(map[Link]coninfo),
 		lnkmap:    make(map[interface{}]Link),
 	}
-	transport.SetChanDecoder(self)
-	transport.SetSender(self.sender)
+	transport.SetSender(self)
 	return self
 }
 
@@ -166,7 +165,7 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	}
 }
 
-func (self *connector) sender(link Link) error {
+func (self *connector) Sender(link Link) error {
 	sigchan := link.Sigchan()
 	vsigsel := reflect.SelectCase{
 		Dir:  reflect.SelectRecv,

@@ -208,6 +208,33 @@ type Link interface {
 	Send(id string, vmsg reflect.Value) (err error)
 }
 
+// TransportRecver is used to receive messages over a network
+// transport.
+//
+// TransportRecver is useful to users implementing a new Transport.
+type TransportRecver interface {
+	Recver(link Link) error
+}
+
+// TransportSender is used to send messages over a network
+// transport.
+//
+// TransportSender is useful to users implementing a new Transport.
+type TransportSender interface {
+	Sender(link Link) error
+}
+
+// Transport is used to transport messages over a network.
+//
+// Transport is useful to users implementing a new network transport.
+type Transport interface {
+	SetRecver(recver TransportRecver)
+	SetSender(sender TransportSender)
+	Listen() error
+	Connect(uri *url.URL) (id string, link Link, err error)
+	Close()
+}
+
 // ChanEncoder is used to encode a channel as a marshaling reference.
 //
 // ChanEncoder is useful to users implementing a new Marshaler.
@@ -222,19 +249,6 @@ type ChanEncoder interface {
 type ChanDecoder interface {
 	ChanDecode(link Link, vchan reflect.Value, buf []byte, accum map[string]reflect.Value) error
 	ChanDecodeAccum(link Link, accum map[string]reflect.Value) error
-}
-
-// Transport is used to transport messages over a network.
-//
-// Transport is useful to users implementing a new network transport.
-type Transport interface {
-	SetChanEncoder(chanEnc ChanEncoder)
-	SetChanDecoder(chanDec ChanDecoder)
-	SetRecver(func(link Link) error)
-	SetSender(func(link Link) error)
-	Listen() error
-	Connect(uri *url.URL) (id string, link Link, err error)
-	Close()
 }
 
 // Marshaler is used to encode/decode messages for transporting over a

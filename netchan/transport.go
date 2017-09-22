@@ -18,10 +18,8 @@ import (
 )
 
 type defaultTransport struct {
-	chanEnc   ChanEncoder
-	chanDec   ChanDecoder
-	recver    func(link Link) error
-	sender    func(link Link) error
+	recver    TransportRecver
+	sender    TransportSender
 	lmux      sync.Mutex
 	listening bool
 	tonce     sync.Once
@@ -35,19 +33,11 @@ func newDefaultTransport() *defaultTransport {
 	}
 }
 
-func (self *defaultTransport) SetChanEncoder(chanEnc ChanEncoder) {
-	self.chanEnc = chanEnc
-}
-
-func (self *defaultTransport) SetChanDecoder(chanDec ChanDecoder) {
-	self.chanDec = chanDec
-}
-
-func (self *defaultTransport) SetRecver(recver func(link Link) error) {
+func (self *defaultTransport) SetRecver(recver TransportRecver) {
 	self.recver = recver
 }
 
-func (self *defaultTransport) SetSender(sender func(link Link) error) {
+func (self *defaultTransport) SetSender(sender TransportSender) {
 	self.sender = sender
 }
 
@@ -107,8 +97,6 @@ func (self *defaultTransport) Close() {
 func (self *defaultTransport) initTransports() {
 	self.tonce.Do(func() {
 		for _, transport := range self.transport {
-			transport.SetChanEncoder(self.chanEnc)
-			transport.SetChanDecoder(self.chanDec)
 			transport.SetRecver(self.recver)
 			transport.SetSender(self.sender)
 		}
