@@ -28,7 +28,7 @@ var mainWG = &sync.WaitGroup{}
 func ping(uri string, count int) {
 	chch := make(chan chan struct{})
 
-	err := netchan.Connect(uri, chch, nil)
+	err := netchan.Bind(uri, chch, nil)
 	if nil != err {
 		panic(err)
 	}
@@ -70,7 +70,7 @@ func pong(id string, count int) {
 func iping(uri string, count int) {
 	chch := make(chan interface{})
 
-	err := netchan.Connect(uri, chch, nil)
+	err := netchan.Bind(uri, chch, nil)
 	if nil != err {
 		panic(err)
 	}

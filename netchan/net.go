@@ -278,7 +278,7 @@ func (self *netLink) accept(conn interface{}) *netLink {
 	return self
 }
 
-func (self *netLink) connect() (interface{}, time.Duration, error) {
+func (self *netLink) dial() (interface{}, time.Duration, error) {
 	self.mux.Lock()
 	defer self.mux.Unlock()
 
@@ -346,7 +346,7 @@ func (self *netLink) Recv() (id string, vmsg reflect.Value, err error) {
 }
 
 func (self *netLink) Send(id string, vmsg reflect.Value) (err error) {
-	conn, idleTimeout, err := self.connect()
+	conn, idleTimeout, err := self.dial()
 	if nil != err {
 		return
 	}
@@ -557,7 +557,7 @@ func (self *netTransport) Listen() error {
 	return nil
 }
 
-func (self *netTransport) Connect(uri *url.URL) (string, Link, error) {
+func (self *netTransport) Dial(uri *url.URL) (string, Link, error) {
 	if uri.Scheme != self.uri.Scheme {
 		return "", nil, ErrTransportInvalid
 	}
@@ -567,7 +567,7 @@ func (self *netTransport) Connect(uri *url.URL) (string, Link, error) {
 		return "", nil, ErrArgumentInvalid
 	}
 
-	mlink, err := self.connect(&url.URL{
+	mlink, err := self.dial(&url.URL{
 		Scheme: uri.Scheme,
 		Host:   uri.Host,
 	})
@@ -631,7 +631,7 @@ func (self *netTransport) accept(conn interface{}) error {
 		host = "127.0.0.127"
 	}
 
-	mlink, err := self.connect(&url.URL{
+	mlink, err := self.dial(&url.URL{
 		Scheme: self.uri.Scheme,
 		Host:   host,
 		Path:   self.uri.Path,
@@ -651,7 +651,7 @@ func (self *netTransport) accept(conn interface{}) error {
 	return nil
 }
 
-func (self *netTransport) connect(uri *url.URL) (*netMultiLink, error) {
+func (self *netTransport) dial(uri *url.URL) (*netMultiLink, error) {
 	if self.done {
 		return nil, ErrTransportClosed
 	}
@@ -704,7 +704,7 @@ func (self *netTransport) gc(mlink *netMultiLink) {
 	defer self.mux.Unlock()
 
 	/*
-	 * We take care to gcref() this link in connect() while holding the mux.
+	 * We take care to gcref() this link in dial() while holding the mux.
 	 * This ensures that gcisref() will check for a reference in a safe manner.
 	 */
 

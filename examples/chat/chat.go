@@ -47,7 +47,7 @@ var (
 
 func chat(src *session) {
 	errchan := make(chan error, 1)
-	netchan.Connect(nil, src.user, errchan)
+	netchan.Bind(nil, src.user, errchan)
 
 loop:
 	for {

@@ -1,5 +1,5 @@
 /*
- * publisher_connector_test.go
+ * publisher_binder_test.go
  *
  * Copyright 2017 Bill Zissimopoulos
  */
@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-func testPublisherConnector(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinder(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan := make(chan error)
@@ -30,7 +30,7 @@ func testPublisherConnector(t *testing.T, publisher Publisher, connector Connect
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -54,7 +54,7 @@ func testPublisherConnector(t *testing.T, publisher Publisher, connector Connect
 	publisher.Unpublish("one", pchan)
 }
 
-func TestPublisherConnector(t *testing.T) {
+func TestPublisherBinder(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -64,20 +64,20 @@ func TestPublisherConnector(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnector(t, publisher, connector)
+	testPublisherBinder(t, publisher, binder)
 }
 
-func TestDefaultPublisherConnector(t *testing.T) {
-	testPublisherConnector(t, DefaultPublisher, DefaultConnector)
+func TestDefaultPublisherBinder(t *testing.T) {
+	testPublisherBinder(t, DefaultPublisher, DefaultBinder)
 }
 
-func testPublisherConnectorUri(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderUri(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan := make(chan error)
@@ -87,7 +87,7 @@ func testPublisherConnectorUri(t *testing.T, publisher Publisher, connector Conn
 		panic(err)
 	}
 
-	err = connector.Connect("tcp://127.0.0.1/one", cchan, echan)
+	err = binder.Bind("tcp://127.0.0.1/one", cchan, echan)
 	if nil != err {
 		panic(err)
 	}
@@ -104,7 +104,7 @@ func testPublisherConnectorUri(t *testing.T, publisher Publisher, connector Conn
 	publisher.Unpublish("one", pchan)
 }
 
-func TestPublisherConnectorUri(t *testing.T) {
+func TestPublisherBinderUri(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -114,16 +114,16 @@ func TestPublisherConnectorUri(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorUri(t, publisher, connector)
+	testPublisherBinderUri(t, publisher, binder)
 }
 
-func testPublisherConnectorAnyAll(t *testing.T, publisher Publisher, connector Connector,
+func testPublisherBinderAnyAll(t *testing.T, publisher Publisher, binder Binder,
 	anyall string) {
 	pchan0 := make(chan string)
 	pchan1 := make(chan string)
@@ -148,7 +148,7 @@ func testPublisherConnectorAnyAll(t *testing.T, publisher Publisher, connector C
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -196,7 +196,7 @@ func testPublisherConnectorAnyAll(t *testing.T, publisher Publisher, connector C
 	publisher.Unpublish(id, pchan2)
 }
 
-func TestPublisherConnectorAnyAll(t *testing.T) {
+func TestPublisherBinderAnyAll(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -206,23 +206,23 @@ func TestPublisherConnectorAnyAll(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorAnyAll(t, publisher, connector, "")
-	testPublisherConnectorAnyAll(t, publisher, connector, "+")
+	testPublisherBinderAnyAll(t, publisher, binder, "")
+	testPublisherBinderAnyAll(t, publisher, binder, "+")
 }
 
-func TestDefaultPublisherConnectorAnyAll(t *testing.T) {
-	testPublisherConnectorAnyAll(t, DefaultPublisher, DefaultConnector, "")
-	testPublisherConnectorAnyAll(t, DefaultPublisher, DefaultConnector, "+")
+func TestDefaultPublisherBinderAnyAll(t *testing.T) {
+	testPublisherBinderAnyAll(t, DefaultPublisher, DefaultBinder, "")
+	testPublisherBinderAnyAll(t, DefaultPublisher, DefaultBinder, "+")
 }
 
-func testPublisherConnectorError(t *testing.T,
-	transport Transport, publisher Publisher, connector Connector) {
+func testPublisherBinderError(t *testing.T,
+	transport Transport, publisher Publisher, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan0 := make(chan error)
@@ -249,7 +249,7 @@ func testPublisherConnectorError(t *testing.T,
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -261,7 +261,7 @@ func testPublisherConnectorError(t *testing.T,
 		t.Error()
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -300,7 +300,7 @@ func testPublisherConnectorError(t *testing.T,
 	}
 }
 
-func TestPublisherConnectorError(t *testing.T) {
+func TestPublisherBinderError(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -310,14 +310,14 @@ func TestPublisherConnectorError(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 	}()
 
-	testPublisherConnectorError(t, transport, publisher, connector)
+	testPublisherBinderError(t, transport, publisher, binder)
 }
 
-func testPublisherConnectorCloseRecv(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderCloseRecv(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan := make(chan error)
@@ -327,7 +327,7 @@ func testPublisherConnectorCloseRecv(t *testing.T, publisher Publisher, connecto
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -349,7 +349,7 @@ func testPublisherConnectorCloseRecv(t *testing.T, publisher Publisher, connecto
 	publisher.Unpublish("one", pchan)
 }
 
-func TestPublisherConnectorCloseRecv(t *testing.T) {
+func TestPublisherBinderCloseRecv(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -359,16 +359,16 @@ func TestPublisherConnectorCloseRecv(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorCloseRecv(t, publisher, connector)
+	testPublisherBinderCloseRecv(t, publisher, binder)
 }
 
-func testPublisherConnectorInv(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderInv(t *testing.T, publisher Publisher, binder Binder) {
 	ichan := make(chan Message)
 	pchan := make(chan string)
 	cchan := make(chan int)
@@ -384,7 +384,7 @@ func testPublisherConnectorInv(t *testing.T, publisher Publisher, connector Conn
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -409,7 +409,7 @@ func testPublisherConnectorInv(t *testing.T, publisher Publisher, connector Conn
 	publisher.Unpublish(IdInv, pchan)
 }
 
-func TestPublisherConnectorInv(t *testing.T) {
+func TestPublisherBinderInv(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -419,16 +419,16 @@ func TestPublisherConnectorInv(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorInv(t, publisher, connector)
+	testPublisherBinderInv(t, publisher, binder)
 }
 
-func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderMulti(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -445,7 +445,7 @@ func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Co
 	for i := range cchan {
 		cchan[i] = make(chan string)
 
-		err := connector.Connect(
+		err := binder.Bind(
 			&url.URL{
 				Scheme: "tcp",
 				Host:   "127.0.0.1",
@@ -475,7 +475,7 @@ func testPublisherConnectorMulti(t *testing.T, publisher Publisher, connector Co
 	}
 }
 
-func TestPublisherConnectorMulti(t *testing.T) {
+func TestPublisherBinderMulti(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -485,20 +485,20 @@ func TestPublisherConnectorMulti(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorMulti(t, publisher, connector)
+	testPublisherBinderMulti(t, publisher, binder)
 }
 
-func TestDefaultPublisherConnectorMulti(t *testing.T) {
-	testPublisherConnectorMulti(t, DefaultPublisher, DefaultConnector)
+func TestDefaultPublisherBinderMulti(t *testing.T) {
+	testPublisherBinderMulti(t, DefaultPublisher, DefaultBinder)
 }
 
-func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderMultiConcurrent(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -515,7 +515,7 @@ func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, co
 	for i := range cchan {
 		cchan[i] = make(chan string)
 
-		err := connector.Connect(
+		err := binder.Bind(
 			&url.URL{
 				Scheme: "tcp",
 				Host:   "127.0.0.1",
@@ -562,7 +562,7 @@ func testPublisherConnectorMultiConcurrent(t *testing.T, publisher Publisher, co
 	}
 }
 
-func TestPublisherConnectorMultiConcurrent(t *testing.T) {
+func TestPublisherBinderMultiConcurrent(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -572,20 +572,20 @@ func TestPublisherConnectorMultiConcurrent(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorMultiConcurrent(t, publisher, connector)
+	testPublisherBinderMultiConcurrent(t, publisher, binder)
 }
 
-func TestDefaultPublisherConnectorMultiConcurrent(t *testing.T) {
-	testPublisherConnectorMultiConcurrent(t, DefaultPublisher, DefaultConnector)
+func TestDefaultPublisherBinderMultiConcurrent(t *testing.T) {
+	testPublisherBinderMultiConcurrent(t, DefaultPublisher, DefaultBinder)
 }
 
-func testPublisherConnectorRoundtrip(t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderRoundtrip(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make(chan chan string)
 	cchan := make(chan chan string)
 	echan := make(chan error)
@@ -595,7 +595,7 @@ func testPublisherConnectorRoundtrip(t *testing.T, publisher Publisher, connecto
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -625,7 +625,7 @@ func testPublisherConnectorRoundtrip(t *testing.T, publisher Publisher, connecto
 	publisher.Unpublish("one", pchan)
 }
 
-func TestPublisherConnectorRoundtrip(t *testing.T) {
+func TestPublisherBinderRoundtrip(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -635,21 +635,21 @@ func TestPublisherConnectorRoundtrip(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorRoundtrip(t, publisher, connector)
+	testPublisherBinderRoundtrip(t, publisher, binder)
 }
 
-func TestDefaultPublisherConnectorRoundtrip(t *testing.T) {
-	testPublisherConnectorRoundtrip(t, DefaultPublisher, DefaultConnector)
+func TestDefaultPublisherBinderRoundtrip(t *testing.T) {
+	testPublisherBinderRoundtrip(t, DefaultPublisher, DefaultBinder)
 }
 
-func testPublisherConnectorMultiConcurrentRoundtrip(
-	t *testing.T, publisher Publisher, connector Connector) {
+func testPublisherBinderMultiConcurrentRoundtrip(
+	t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make([]chan chan string, 100)
 	cchan := make([]chan chan string, 100)
 	echan := make(chan error)
@@ -666,7 +666,7 @@ func testPublisherConnectorMultiConcurrentRoundtrip(
 	for i := range cchan {
 		cchan[i] = make(chan chan string)
 
-		err := connector.Connect(
+		err := binder.Bind(
 			&url.URL{
 				Scheme: "tcp",
 				Host:   "127.0.0.1",
@@ -717,7 +717,7 @@ func testPublisherConnectorMultiConcurrentRoundtrip(
 	}
 }
 
-func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
+func TestPublisherBinderMultiConcurrentRoundtrip(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -727,15 +727,15 @@ func TestPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherConnectorMultiConcurrentRoundtrip(t, publisher, connector)
+	testPublisherBinderMultiConcurrentRoundtrip(t, publisher, binder)
 }
 
-func TestDefaultPublisherConnectorMultiConcurrentRoundtrip(t *testing.T) {
-	testPublisherConnectorMultiConcurrentRoundtrip(t, DefaultPublisher, DefaultConnector)
+func TestDefaultPublisherBinderMultiConcurrentRoundtrip(t *testing.T) {
+	testPublisherBinderMultiConcurrentRoundtrip(t, DefaultPublisher, DefaultBinder)
 }

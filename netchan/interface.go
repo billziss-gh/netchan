@@ -17,10 +17,10 @@
 // this package).
 //
 // There are two fundamental concepts in netchan: "publishing" and
-// "connecting". A channel that is published, becomes associated with a
+// "binding". A channel that is published, becomes associated with a
 // public name ("ID") and available to receive messages. A channel on a
-// different machine may then be connected to the published channel.
-// Messages sent to the connected channel will be transported over a
+// different machine may then be bound to the published channel.
+// Messages sent to the bound channel will be transported over a
 // network transport and will become available to be received by the
 // published channel. Effectively the two channels become the endpoints of
 // a unidirectional network link.
@@ -41,17 +41,17 @@
 // error) under the special broadcast ID "+err/". All such error channels
 // will receive transport errors, etc.
 //
-// Connecting a channel
+// Binding a channel
 //
-// In order to connect a channel to an "address" the Connect() function
-// must be used; to disconnect the channel simply close the channel.
+// In order to bind a channel to an "address" the Bind() function must be
+// used; to unbind the channel simply close it.
 // Addresses in this package depend on the underlying transport and take
 // the form of URI's. For the default TCP transport an address has the
 // syntax: tcp://HOST[:PORT]/ID
 //
-// When using Connect() an error channel (of type chan error) may also be
+// When using Bind() an error channel (of type chan error) may also be
 // specified. This error channel will receive transport errors, etc.
-// related to the connected channel.
+// related to the bound channel.
 //
 // Marshaling
 //
@@ -68,16 +68,16 @@
 //              (https://github.com/billziss-gh/netjson)
 //
 // Channels that are marshaled in this way are also implicitly published
-// and connected. When a message that is being sent contains a channel, a
+// and bound. When a message that is being sent contains a channel, a
 // reference is computed for that channel and the channel is implicitly
 // published under that reference. When the message arrives at the target
 // machine the reference gets decoded and a new channel is constructed and
-// implicitly connected back to the marshaled channel.
+// implicitly bound back to the marshaled channel.
 //
-// It is now possible to use the implicitly connected channel to send
+// It is now possible to use the implicitly bound channel to send
 // messages back to the marshaled and implicitly published channel.
 // Implicitly published channels that are no longer in use will be
-// eventually garbage collected. Implicitly connected channels must be
+// eventually garbage collected. Implicitly bound channels must be
 // closed when they will no longer be used for communication.
 //
 // Transports
@@ -134,35 +134,34 @@ type Publisher interface {
 	Unpublish(id string, ichan interface{})
 }
 
-// Connector is used to connect a local channel to a remotely published
-// channel.
-type Connector interface {
-	// Connect connects a local channel to a remotely published channel.
-	// After the connection is established, the connected channel may be
-	// used to send messages to the remote channel.
+// Binder is used to bind a local channel to a remote channel.
+type Binder interface {
+	// Bind binds a local channel to a URI that is addressing a remote
+	// channel. After the binding is established, the bound channel may
+	// be used to send messages to the remote channel.
 	//
-	// Remotely published channels may be addressed by URI's. The URI
+	// Remotely published channels are addressed by URI's. The URI
 	// syntax depends on the underlying transport. For the default TCP
 	// transport an address has the syntax: tcp://HOST[:PORT]/ID
 	//
 	// The uri parameter contains the URI and can be of type string or
 	// *url.URL. An error channel (of type chan error) may also be
 	// specified. This error channel will receive transport errors, etc.
-	// related to the connected channel.
+	// related to the bound channel.
 	//
 	// It is also possible to associate a new error channel with an
-	// already connected channel. For this purpose use a nil uri and
-	// the new error channel to associate with the connected channel.
+	// already bound channel. For this purpose use a nil uri and
+	// the new error channel to associate with the bound channel.
 	//
-	// To disconnect a connected channel simply close it.
-	Connect(uri interface{}, ichan interface{}, echan chan error) error
+	// To unbind a bound channel simply close it.
+	Bind(uri interface{}, ichan interface{}, echan chan error) error
 }
 
 // Stats is used to monitor the activity of a netchan component.
 // Stats is a collection of values accessible by name; these values
 // typically represent a count or ratio.
 //
-// Publishers and connectors implement Stats to provide insights
+// Publishers and binders implement Stats to provide insights
 // into their internal workings.
 type Stats interface {
 	// StatNames returns a list of value names.
@@ -229,7 +228,7 @@ type Transport interface {
 	SetRecver(recver Recver)
 	SetSender(sender Sender)
 	Listen() error
-	Connect(uri *url.URL) (id string, link Link, err error)
+	Dial(uri *url.URL) (id string, link Link, err error)
 	Close()
 }
 

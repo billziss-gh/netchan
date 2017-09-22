@@ -94,7 +94,7 @@ func testTransport(t *testing.T, transport Transport, scheme string) {
 		panic(err)
 	}
 
-	id, link, err := transport.Connect(&url.URL{
+	id, link, err := transport.Dial(&url.URL{
 		Scheme: scheme,
 		Host:   "127.0.0.1",
 		Path:   "/" + id0,
@@ -104,7 +104,7 @@ func testTransport(t *testing.T, transport Transport, scheme string) {
 	}
 
 	if id0 != id {
-		t.Errorf("Connect: incorrect id: %v", id)
+		t.Errorf("Dial: incorrect id: %v", id)
 	}
 
 	link.Activate()
@@ -237,7 +237,7 @@ func testTransportIdle(t *testing.T, transport Transport, scheme string) {
 		panic(err)
 	}
 
-	_, link, err := transport.Connect(&url.URL{
+	_, link, err := transport.Dial(&url.URL{
 		Scheme: scheme,
 		Host:   "127.0.0.1",
 		Path:   "/" + id0,
@@ -313,7 +313,7 @@ func testTransportRedial(t *testing.T, transport Transport, scheme string) {
 		panic(err)
 	}
 
-	_, link, err := transport.Connect(&url.URL{
+	_, link, err := transport.Dial(&url.URL{
 		Scheme: scheme,
 		Host:   "127.0.0.1:25001",
 		Path:   "/id",

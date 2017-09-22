@@ -1,5 +1,5 @@
 /*
- * connector_test.go
+ * binder_test.go
  *
  * Copyright 2017 Bill Zissimopoulos
  */
@@ -18,10 +18,10 @@ import (
 	"time"
 )
 
-func testConnector(t *testing.T, connector Connector) {
+func testBinder(t *testing.T, binder Binder) {
 	ichan := make(chan bool)
 
-	err := connector.Connect(
+	err := binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.1",
@@ -33,7 +33,7 @@ func testConnector(t *testing.T, connector Connector) {
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		&url.URL{
 			Scheme: "tcp",
 			Host:   "127.0.0.2",
@@ -41,11 +41,11 @@ func testConnector(t *testing.T, connector Connector) {
 		},
 		ichan,
 		nil)
-	if ErrConnectorChanConnected != err {
-		t.Errorf("incorrect error: expect %v, got %v", ErrConnectorChanConnected, err)
+	if ErrBinderChanBound != err {
+		t.Errorf("incorrect error: expect %v, got %v", ErrBinderChanBound, err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		nil,
 		ichan,
 		make(chan error))
@@ -53,18 +53,18 @@ func testConnector(t *testing.T, connector Connector) {
 		panic(err)
 	}
 
-	err = connector.Connect(
+	err = binder.Bind(
 		nil,
 		make(chan int),
 		make(chan error))
-	if ErrConnectorChanNotConnected != err {
-		t.Errorf("incorrect error: expect %v, got %v", ErrConnectorChanNotConnected, err)
+	if ErrBinderChanNotBound != err {
+		t.Errorf("incorrect error: expect %v, got %v", ErrBinderChanNotBound, err)
 	}
 
 	close(ichan)
 }
 
-func TestConnector(t *testing.T) {
+func TestBinder(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -74,28 +74,28 @@ func TestConnector(t *testing.T) {
 		},
 		nil)
 	NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testConnector(t, connector)
+	testBinder(t, binder)
 }
 
-func TestDefaultConnector(t *testing.T) {
-	testConnector(t, DefaultConnector)
+func TestDefaultBinder(t *testing.T) {
+	testBinder(t, DefaultBinder)
 }
 
-func TestDefaultConnectorHideImpl(t *testing.T) {
-	_, okR := DefaultConnector.(Sender)
-	_, okC := DefaultConnector.(ChanDecoder)
+func TestDefaultBinderHideImpl(t *testing.T) {
+	_, okR := DefaultBinder.(Sender)
+	_, okC := DefaultBinder.(ChanDecoder)
 
 	if okR {
-		t.Errorf("DefaultConnector SHOULD NOT implement TransportSender")
+		t.Errorf("DefaultBinder SHOULD NOT implement TransportSender")
 	}
 
 	if okC {
-		t.Errorf("DefaultConnector SHOULD NOT implement ChanDecoder")
+		t.Errorf("DefaultBinder SHOULD NOT implement ChanDecoder")
 	}
 }

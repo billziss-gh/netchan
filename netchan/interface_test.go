@@ -24,7 +24,7 @@ func ping(wg *sync.WaitGroup, count int) {
 
 	pingch := make(chan chan struct{})
 	errch := make(chan error, 1)
-	err := Connect("tcp://127.0.0.1/pingpong", pingch, errch)
+	err := Bind("tcp://127.0.0.1/pingpong", pingch, errch)
 	if nil != err {
 		panic(err)
 	}

@@ -185,7 +185,7 @@ func (self *httpTransport) Listen() error {
 	return nil
 }
 
-func (self *httpTransport) Connect(uri *url.URL) (string, Link, error) {
+func (self *httpTransport) Dial(uri *url.URL) (string, Link, error) {
 	if uri.Scheme != self.uri.Scheme {
 		return "", nil, ErrTransportInvalid
 	}
@@ -200,7 +200,7 @@ func (self *httpTransport) Connect(uri *url.URL) (string, Link, error) {
 		return "", nil, ErrArgumentInvalid
 	}
 
-	mlink, err := self.connect(&url.URL{
+	mlink, err := self.dial(&url.URL{
 		Scheme: uri.Scheme,
 		Host:   uri.Host,
 		Path:   path,

@@ -86,17 +86,17 @@ func MakeErrPublisher(args ...interface{}) *ErrPublisher {
 	return err
 }
 
-// ErrConnector encapsulates a connector error.
-// ErrConnector implements the Err interface.
-type ErrConnector struct {
+// ErrBinder encapsulates a binder error.
+// ErrBinder implements the Err interface.
+type ErrBinder struct {
 	errData
 }
 
-// MakeErrConnector makes a connector error.
-func MakeErrConnector(args ...interface{}) *ErrConnector {
-	err := &ErrConnector{}
+// MakeErrBinder makes a binder error.
+func MakeErrBinder(args ...interface{}) *ErrBinder {
+	err := &ErrBinder{}
 	n := err._args(args)
-	if e, ok := n.(*ErrConnector); ok {
+	if e, ok := n.(*ErrBinder); ok {
 		return e
 	}
 	return err
@@ -138,8 +138,8 @@ func MakeErrMarshaler(args ...interface{}) *ErrMarshaler {
 // All errors reported implement the Err interface.
 var (
 	ErrArgumentInvalid             error = MakeErrArgument("netchan: argument: invalid")
-	ErrConnectorChanConnected      error = MakeErrConnector("netchan: connector: chan is connected")
-	ErrConnectorChanNotConnected   error = MakeErrConnector("netchan: connector: chan is not connected")
+	ErrBinderChanBound             error = MakeErrBinder("netchan: binder: chan is bound")
+	ErrBinderChanNotBound          error = MakeErrBinder("netchan: binder: chan is not bound")
 	ErrTransportInvalid            error = MakeErrTransport("netchan: transport: invalid")
 	ErrTransportClosed             error = MakeErrTransport("netchan: transport: closed")
 	ErrTransportUnexpectedResponse error = MakeErrTransport("netchan: transport: unexpected response")

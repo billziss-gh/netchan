@@ -75,7 +75,7 @@ func (self *defaultTransport) Listen() (err error) {
 	return
 }
 
-func (self *defaultTransport) Connect(uri *url.URL) (string, Link, error) {
+func (self *defaultTransport) Dial(uri *url.URL) (string, Link, error) {
 	self.tmux.RLock()
 	defer self.tmux.RUnlock()
 
@@ -85,7 +85,7 @@ func (self *defaultTransport) Connect(uri *url.URL) (string, Link, error) {
 	}
 
 	self.initTransports()
-	return transport.Connect(uri)
+	return transport.Dial(uri)
 }
 
 func (self *defaultTransport) Close() {

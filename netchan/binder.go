@@ -1,5 +1,5 @@
 /*
- * connector.go
+ * binder.go
  *
  * Copyright 2017 Bill Zissimopoulos
  */
@@ -28,37 +28,37 @@ func echansend(echan chan error, err error) (ok bool) {
 	return
 }
 
-type coninfo struct {
+type bndinfo struct {
 	slist []reflect.SelectCase
 	ilist []string
 	elist []chan error
 }
 
-type connector struct {
+type binder struct {
 	transport Transport
-	conmux    sync.RWMutex
-	conmap    map[Link]coninfo
+	bndmux    sync.RWMutex
+	bndmap    map[Link]bndinfo
 	lnkmap    map[interface{}]Link
 
 	// monitored statistics
 	statSend, statSendErr uint32
 }
 
-type connectorImpl connector
+type binderImpl binder
 
-// NewConnector creates a new Connector that can be used to connect
-// channels. It is usually sufficient to use the DefaultConnector instead.
-func NewConnector(transport Transport) Connector {
-	self := &connector{
+// NewBinder creates a new binder that can be used to bind channels.
+// It is usually sufficient to use the DefaultBinder instead.
+func NewBinder(transport Transport) Binder {
+	self := &binder{
 		transport: transport,
-		conmap:    make(map[Link]coninfo),
+		bndmap:    make(map[Link]bndinfo),
 		lnkmap:    make(map[interface{}]Link),
 	}
-	transport.SetSender((*connectorImpl)(self))
+	transport.SetSender((*binderImpl)(self))
 	return self
 }
 
-func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan error) error {
+func (self *binder) Bind(iuri interface{}, ichan interface{}, echan chan error) error {
 	vchan := reflect.ValueOf(ichan)
 	if reflect.Chan != vchan.Kind() || 0 == vchan.Type().ChanDir()&reflect.SendDir {
 		panic(ErrArgumentInvalid)
@@ -81,38 +81,38 @@ func (self *connector) Connect(iuri interface{}, ichan interface{}, echan chan e
 	}
 
 	if nil == uri {
-		return self.connect("", nil, vchan, echan)
+		return self.bind("", nil, vchan, echan)
 	}
 
-	id, link, err := self.transport.Connect(uri)
+	id, link, err := self.transport.Dial(uri)
 	if nil != err {
 		return err
 	}
 
-	err = self.connect(id, link, vchan, echan)
+	err = self.bind(id, link, vchan, echan)
 	link.Dereference()
 	return err
 }
 
-func (self *connector) connect(id string, link Link, vchan reflect.Value, echan chan error) error {
-	self.conmux.Lock()
-	defer self.conmux.Unlock()
+func (self *binder) bind(id string, link Link, vchan reflect.Value, echan chan error) error {
+	self.bndmux.Lock()
+	defer self.bndmux.Unlock()
 
 	ichan := vchan.Interface()
 	oldlink, ok := self.lnkmap[ichan]
 	if !ok {
 		if nil == link {
-			return ErrConnectorChanNotConnected
+			return ErrBinderChanNotBound
 		}
 	} else {
 		if nil != link {
-			return ErrConnectorChanConnected
+			return ErrBinderChanBound
 		}
 
 		link = oldlink
 	}
 
-	info := self.conmap[link]
+	info := self.bndmap[link]
 	found := false
 	for i, s := range info.slist {
 		if s.Chan == vchan {
@@ -129,24 +129,24 @@ func (self *connector) connect(id string, link Link, vchan reflect.Value, echan 
 		info.elist = append(info.elist, echan)
 
 		self.lnkmap[ichan] = link
-		self.conmap[link] = info
+		self.bndmap[link] = info
 		link.Sigchan() <- struct{}{}
 
 		link.Reference()
 		link.Activate()
 	} else {
-		self.conmap[link] = info
+		self.bndmap[link] = info
 		link.Sigchan() <- struct{}{}
 	}
 
 	return nil
 }
 
-func (self *connector) disconnect(link Link, vchan reflect.Value) {
-	self.conmux.Lock()
-	defer self.conmux.Unlock()
+func (self *binder) unbind(link Link, vchan reflect.Value) {
+	self.bndmux.Lock()
+	defer self.bndmux.Unlock()
 
-	info := self.conmap[link]
+	info := self.bndmap[link]
 	for i, s := range info.slist {
 		if s.Chan == vchan {
 			link.Dereference()
@@ -156,9 +156,9 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 			info.elist = append(info.elist[:i], info.elist[i+1:]...)
 
 			if 0 == len(info.slist) {
-				delete(self.conmap, link)
+				delete(self.bndmap, link)
 			} else {
-				self.conmap[link] = info
+				self.bndmap[link] = info
 			}
 			delete(self.lnkmap, vchan.Interface())
 
@@ -167,8 +167,8 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	}
 }
 
-func (impl *connectorImpl) Sender(link Link) error {
-	self := (*connector)(impl)
+func (impl *binderImpl) Sender(link Link) error {
+	self := (*binder)(impl)
 	sigchan := link.Sigchan()
 	vsigsel := reflect.SelectCase{
 		Dir:  reflect.SelectRecv,
@@ -178,12 +178,12 @@ func (impl *connectorImpl) Sender(link Link) error {
 outer:
 	for {
 		// make a copy so that we can safely use it outside the read lock
-		self.conmux.RLock()
-		info := self.conmap[link]
+		self.bndmux.RLock()
+		info := self.bndmap[link]
 		slist := append([]reflect.SelectCase{vsigsel}, info.slist...)
 		ilist := append([]string{""}, info.ilist...)
 		elist := append([]chan error{nil}, info.elist...)
-		self.conmux.RUnlock()
+		self.bndmux.RUnlock()
 
 		for {
 			i, vmsg, ok := reflect.Select(slist)
@@ -202,7 +202,7 @@ outer:
 				continue outer
 			}
 			if !ok {
-				self.disconnect(link, slist[i].Chan)
+				self.unbind(link, slist[i].Chan)
 				continue outer
 			}
 
@@ -219,7 +219,7 @@ outer:
 				atomic.AddUint32(&self.statSendErr, 1)
 
 				if nil != elist[i] {
-					echansend(elist[i], MakeErrConnector(err, slist[i].Chan.Interface()))
+					echansend(elist[i], MakeErrBinder(err, slist[i].Chan.Interface()))
 				}
 
 				if _, ok := err.(*ErrTransport); ok {
@@ -230,7 +230,7 @@ outer:
 	}
 }
 
-func (impl *connectorImpl) ChanDecode(link Link,
+func (impl *binderImpl) ChanDecode(link Link,
 	vchan reflect.Value, buf []byte, accum map[string]reflect.Value) error {
 	vchan = vchan.Elem()
 
@@ -254,21 +254,21 @@ func (impl *connectorImpl) ChanDecode(link Link,
 	return nil
 }
 
-func (impl *connectorImpl) ChanDecodeAccum(link Link,
+func (impl *binderImpl) ChanDecodeAccum(link Link,
 	accum map[string]reflect.Value) error {
-	self := (*connector)(impl)
+	self := (*binder)(impl)
 	for id, c := range accum {
-		self.connect(id, link, c, nil)
+		self.bind(id, link, c, nil)
 	}
 
 	return nil
 }
 
-func (self *connector) StatNames() []string {
+func (self *binder) StatNames() []string {
 	return []string{"Send", "SendErr"}
 }
 
-func (self *connector) Stat(name string) float64 {
+func (self *binder) Stat(name string) float64 {
 	switch name {
 	case "Send":
 		return float64(atomic.LoadUint32(&self.statSend))
@@ -279,30 +279,30 @@ func (self *connector) Stat(name string) float64 {
 	}
 }
 
-// DefaultConnector is the default Connector of the running process.
-// Instead of DefaultConnector you can use the Connect function.
-var DefaultConnector Connector = NewConnector(DefaultTransport)
+// DefaultBinder is the default binder of the running process.
+// Instead of DefaultBinder you can use the Bind function.
+var DefaultBinder Binder = NewBinder(DefaultTransport)
 
-// Connect connects a local channel to a remotely published channel.
-// After the connection is established, the connected channel may be
-// used to send messages to the remote channel.
+// Bind binds a local channel to a URI that is addressing a remote
+// channel. After the binding is established, the bound channel may
+// be used to send messages to the remote channel.
 //
-// Remotely published channels may be addressed by URI's. The URI
+// Remotely published channels are addressed by URI's. The URI
 // syntax depends on the underlying transport. For the default TCP
 // transport an address has the syntax: tcp://HOST[:PORT]/ID
 //
 // The uri parameter contains the URI and can be of type string or
 // *url.URL. An error channel (of type chan error) may also be
 // specified. This error channel will receive transport errors, etc.
-// related to the connected channel.
+// related to the bound channel.
 //
 // It is also possible to associate a new error channel with an
-// already connected channel. For this purpose use a nil uri and
-// the new error channel to associate with the connected channel.
+// already bound channel. For this purpose use a nil uri and
+// the new error channel to associate with the bound channel.
 //
-// To disconnect a connected channel simply close it.
+// To unbind a bound channel simply close it.
 //
-// Connect connects a channel using the DefaultConnector.
-func Connect(uri interface{}, ichan interface{}, echan chan error) error {
-	return DefaultConnector.Connect(uri, ichan, echan)
+// Bind binds a channel using the DefaultBinder.
+func Bind(uri interface{}, ichan interface{}, echan chan error) error {
+	return DefaultBinder.Bind(uri, ichan, echan)
 }

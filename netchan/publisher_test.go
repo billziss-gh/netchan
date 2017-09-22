@@ -50,7 +50,7 @@ func TestPublisher(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	NewConnector(transport)
+	NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)

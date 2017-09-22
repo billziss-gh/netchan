@@ -19,7 +19,7 @@ import (
 func TestErr(t *testing.T) {
 	_ = error(MakeErrArgument()).(Err)
 	_ = error(MakeErrPublisher()).(Err)
-	_ = error(MakeErrConnector()).(Err)
+	_ = error(MakeErrBinder()).(Err)
 	_ = error(MakeErrTransport()).(Err)
 	_ = error(MakeErrMarshaler()).(Err)
 

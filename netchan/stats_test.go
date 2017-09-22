@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-func testStats(t *testing.T, publisher Publisher, connector Connector) {
+func testStats(t *testing.T, publisher Publisher, binder Binder) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -37,7 +37,7 @@ func testStats(t *testing.T, publisher Publisher, connector Connector) {
 	for i := range cchan {
 		cchan[i] = make(chan string)
 
-		err := connector.Connect(
+		err := binder.Bind(
 			&url.URL{
 				Scheme: "tcp",
 				Host:   "127.0.0.1",
@@ -97,7 +97,7 @@ func testStats(t *testing.T, publisher Publisher, connector Connector) {
 		}
 	}
 
-	constats := connector.(Stats)
+	constats := binder.(Stats)
 	for _, name := range constats.StatNames() {
 		switch name {
 		case "Send":
@@ -122,11 +122,11 @@ func TestStats(t *testing.T) {
 		},
 		nil)
 	publisher := NewPublisher(transport)
-	connector := NewConnector(transport)
+	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testStats(t, publisher, connector)
+	testStats(t, publisher, binder)
 }

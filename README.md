@@ -10,10 +10,10 @@ that contain channels (i.e. it is possible to "marshal" channels using
 this package).
 
 There are two fundamental concepts in netchan: "publishing" and
-"connecting". A channel that is published, becomes associated with a
+"binding". A channel that is published, becomes associated with a
 public name ("ID") and available to receive messages. A channel on a
-different machine may then be connected to the published channel.
-Messages sent to the connected channel will be transported over a
+different machine may then be bound to the published channel.
+Messages sent to the bound channel will be transported over a
 network transport and will become available to be received by the
 published channel. Effectively the two channels become the endpoints of
 a unidirectional network link.
@@ -35,17 +35,17 @@ error) under the special broadcast ID "+err/". All such error channels
 will receive transport errors, etc. [The special broadcast ID "+err/" is
 local to the running process and cannot be remoted.]
 
-## Connecting a channel
+## Binding a channel
 
-In order to connect a channel to an "address" the Connect() function
-must be used; to disconnect the channel simply close the channel.
+In order to bind a channel to an "address" the Bind() function must be
+used; to unbind the channel simply close the channel.
 Addresses in this package depend on the underlying transport and take
 the form of URI's. For the default TCP transport an address has the
 syntax: tcp://HOST[:PORT]/ID
 
-When using Connect() an error channel (of type chan error) may also be
+When using Bind() an error channel (of type chan error) may also be
 specified. This error channel will receive transport errors, etc.
-related to the connected channel.
+related to the bound channel.
 
 ## Marshaling
 
@@ -60,16 +60,16 @@ channels to be encoded/decoded (https://github.com/billziss-gh/netgob)
 channels to be encoded/decoded (https://github.com/billziss-gh/netjson)
 
 Channels that are marshaled in this way are also implicitly published
-and connected. When a message that is being sent contains a channel, a
+and bound. When a message that is being sent contains a channel, a
 reference is computed for that channel and the channel is implicitly
 published under that reference. When the message arrives at the target
 machine the reference gets decoded and a new channel is constructed and
-implicitly connected back to the marshaled channel.
+implicitly bound back to the marshaled channel.
 
-It is now possible to use the implicitly connected channel to send
+It is now possible to use the implicitly bound channel to send
 messages back to the marshaled and implicitly published channel.
 Implicitly published channels that are no longer in use will be
-eventually garbage collected. Implicitly connected channels must be
+eventually garbage collected. Implicitly bound channels must be
 closed when they will no longer be used for communication.
 
 ## Transports
@@ -105,7 +105,7 @@ func ping(wg *sync.WaitGroup, count int) {
 
 	pingch := make(chan chan struct{})
 	errch := make(chan error, 1)
-	err := netchan.Connect("tcp://127.0.0.1/pingpong", pingch, errch)
+	err := netchan.Bind("tcp://127.0.0.1/pingpong", pingch, errch)
 	if nil != err {
 		panic(err)
 	}
