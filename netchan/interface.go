@@ -208,19 +208,17 @@ type Link interface {
 	Send(id string, vmsg reflect.Value) (err error)
 }
 
-// TransportRecver is used to receive messages over a network
-// transport.
+// Recver is used to receive messages over a network transport.
 //
-// TransportRecver is useful to users implementing a new Transport.
-type TransportRecver interface {
+// Recver is useful to users implementing a new Transport.
+type Recver interface {
 	Recver(link Link) error
 }
 
-// TransportSender is used to send messages over a network
-// transport.
+// Sender is used to send messages over a network transport.
 //
-// TransportSender is useful to users implementing a new Transport.
-type TransportSender interface {
+// Sender is useful to users implementing a new Transport.
+type Sender interface {
 	Sender(link Link) error
 }
 
@@ -228,8 +226,8 @@ type TransportSender interface {
 //
 // Transport is useful to users implementing a new network transport.
 type Transport interface {
-	SetRecver(recver TransportRecver)
-	SetSender(sender TransportSender)
+	SetRecver(recver Recver)
+	SetSender(sender Sender)
 	Listen() error
 	Connect(uri *url.URL) (id string, link Link, err error)
 	Close()

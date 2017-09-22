@@ -88,7 +88,7 @@ func TestDefaultConnector(t *testing.T) {
 }
 
 func TestDefaultConnectorHideImpl(t *testing.T) {
-	_, okR := DefaultConnector.(TransportSender)
+	_, okR := DefaultConnector.(Sender)
 	_, okC := DefaultConnector.(ChanDecoder)
 
 	if okR {

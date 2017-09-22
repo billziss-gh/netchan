@@ -467,8 +467,8 @@ type netTransport struct {
 	uri       *url.URL
 	cfg       *Config
 	tlscfg    *tls.Config
-	recver    TransportRecver
-	sender    TransportSender
+	recver    Recver
+	sender    Sender
 	mux       sync.Mutex
 	done      bool
 	listen    net.Listener
@@ -521,13 +521,13 @@ func (self *netTransport) init(marshaler Marshaler, uri *url.URL, cfg *Config,
 	self.mlink = make(map[string]*netMultiLink)
 }
 
-func (self *netTransport) SetRecver(recver TransportRecver) {
+func (self *netTransport) SetRecver(recver Recver) {
 	chanEnc, _ := recver.(ChanEncoder)
 	self.marshaler.SetChanEncoder(chanEnc)
 	self.recver = recver
 }
 
-func (self *netTransport) SetSender(sender TransportSender) {
+func (self *netTransport) SetSender(sender Sender) {
 	chanDec, _ := sender.(ChanDecoder)
 	self.marshaler.SetChanDecoder(chanDec)
 	self.sender = sender

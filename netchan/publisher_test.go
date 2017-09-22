@@ -64,7 +64,7 @@ func TestDefaultPublisher(t *testing.T) {
 }
 
 func TestDefaultPublisherHideImpl(t *testing.T) {
-	_, okR := DefaultPublisher.(TransportRecver)
+	_, okR := DefaultPublisher.(Recver)
 	_, okC := DefaultPublisher.(ChanEncoder)
 
 	if okR {

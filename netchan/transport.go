@@ -18,8 +18,8 @@ import (
 )
 
 type defaultTransport struct {
-	recver    TransportRecver
-	sender    TransportSender
+	recver    Recver
+	sender    Sender
 	lmux      sync.Mutex
 	listening bool
 	tonce     sync.Once
@@ -33,11 +33,11 @@ func newDefaultTransport() *defaultTransport {
 	}
 }
 
-func (self *defaultTransport) SetRecver(recver TransportRecver) {
+func (self *defaultTransport) SetRecver(recver Recver) {
 	self.recver = recver
 }
 
-func (self *defaultTransport) SetSender(sender TransportSender) {
+func (self *defaultTransport) SetSender(sender Sender) {
 	self.sender = sender
 }
 
