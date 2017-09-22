@@ -1,5 +1,5 @@
 /*
- * publisher_binder_test.go
+ * exposer_binder_test.go
  *
  * Copyright 2017 Bill Zissimopoulos
  */
@@ -20,12 +20,12 @@ import (
 	"time"
 )
 
-func testPublisherBinder(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinder(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan := make(chan error)
 
-	err := publisher.Publish("one", pchan)
+	err := exposer.Expose("one", pchan)
 	if nil != err {
 		panic(err)
 	}
@@ -51,10 +51,10 @@ func testPublisherBinder(t *testing.T, publisher Publisher, binder Binder) {
 		t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
 	}
 
-	publisher.Unpublish("one", pchan)
+	exposer.Unexpose("one", pchan)
 }
 
-func TestPublisherBinder(t *testing.T) {
+func TestExposerBinder(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -63,26 +63,26 @@ func TestPublisherBinder(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinder(t, publisher, binder)
+	testExposerBinder(t, exposer, binder)
 }
 
-func TestDefaultPublisherBinder(t *testing.T) {
-	testPublisherBinder(t, DefaultPublisher, DefaultBinder)
+func TestDefaultExposerBinder(t *testing.T) {
+	testExposerBinder(t, DefaultExposer, DefaultBinder)
 }
 
-func testPublisherBinderUri(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderUri(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan := make(chan error)
 
-	err := publisher.Publish("one", pchan)
+	err := exposer.Expose("one", pchan)
 	if nil != err {
 		panic(err)
 	}
@@ -101,10 +101,10 @@ func testPublisherBinderUri(t *testing.T, publisher Publisher, binder Binder) {
 		t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
 	}
 
-	publisher.Unpublish("one", pchan)
+	exposer.Unexpose("one", pchan)
 }
 
-func TestPublisherBinderUri(t *testing.T) {
+func TestExposerBinderUri(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -113,17 +113,17 @@ func TestPublisherBinderUri(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderUri(t, publisher, binder)
+	testExposerBinderUri(t, exposer, binder)
 }
 
-func testPublisherBinderAnyAll(t *testing.T, publisher Publisher, binder Binder,
+func testExposerBinderAnyAll(t *testing.T, exposer Exposer, binder Binder,
 	anyall string) {
 	pchan0 := make(chan string)
 	pchan1 := make(chan string)
@@ -133,17 +133,17 @@ func testPublisherBinderAnyAll(t *testing.T, publisher Publisher, binder Binder,
 
 	id := anyall + "one"
 
-	err := publisher.Publish(id, pchan0)
+	err := exposer.Expose(id, pchan0)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish(id, pchan1)
+	err = exposer.Expose(id, pchan1)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish(id, pchan2)
+	err = exposer.Expose(id, pchan2)
 	if nil != err {
 		panic(err)
 	}
@@ -191,12 +191,12 @@ func testPublisherBinderAnyAll(t *testing.T, publisher Publisher, binder Binder,
 		}
 	}
 
-	publisher.Unpublish(id, pchan0)
-	publisher.Unpublish(id, pchan1)
-	publisher.Unpublish(id, pchan2)
+	exposer.Unexpose(id, pchan0)
+	exposer.Unexpose(id, pchan1)
+	exposer.Unexpose(id, pchan2)
 }
 
-func TestPublisherBinderAnyAll(t *testing.T) {
+func TestExposerBinderAnyAll(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -205,46 +205,46 @@ func TestPublisherBinderAnyAll(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderAnyAll(t, publisher, binder, "")
-	testPublisherBinderAnyAll(t, publisher, binder, "+")
+	testExposerBinderAnyAll(t, exposer, binder, "")
+	testExposerBinderAnyAll(t, exposer, binder, "+")
 }
 
-func TestDefaultPublisherBinderAnyAll(t *testing.T) {
-	testPublisherBinderAnyAll(t, DefaultPublisher, DefaultBinder, "")
-	testPublisherBinderAnyAll(t, DefaultPublisher, DefaultBinder, "+")
+func TestDefaultExposerBinderAnyAll(t *testing.T) {
+	testExposerBinderAnyAll(t, DefaultExposer, DefaultBinder, "")
+	testExposerBinderAnyAll(t, DefaultExposer, DefaultBinder, "+")
 }
 
-func testPublisherBinderError(t *testing.T,
-	transport Transport, publisher Publisher, binder Binder) {
+func testExposerBinderError(t *testing.T,
+	transport Transport, exposer Exposer, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan0 := make(chan error)
 	echan1 := make(chan error)
 	echan2 := make(chan error)
 
-	err := publisher.Publish("one", pchan)
+	err := exposer.Expose("one", pchan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish(IdErr, echan0)
+	err = exposer.Expose(IdErr, echan0)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish(IdErr, echan1)
+	err = exposer.Expose(IdErr, echan1)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish(IdErr, echan2)
+	err = exposer.Expose(IdErr, echan2)
 	if nil != err {
 		panic(err)
 	}
@@ -282,7 +282,7 @@ func testPublisherBinderError(t *testing.T,
 		t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
 	}
 
-	publisher.Unpublish("one", pchan)
+	exposer.Unexpose("one", pchan)
 
 	transport.Close()
 	time.Sleep(100 * time.Millisecond)
@@ -300,7 +300,7 @@ func testPublisherBinderError(t *testing.T,
 	}
 }
 
-func TestPublisherBinderError(t *testing.T) {
+func TestExposerBinderError(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -309,20 +309,20 @@ func TestPublisherBinderError(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 	}()
 
-	testPublisherBinderError(t, transport, publisher, binder)
+	testExposerBinderError(t, transport, exposer, binder)
 }
 
-func testPublisherBinderCloseRecv(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderCloseRecv(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make(chan string)
 	cchan := make(chan string)
 	echan := make(chan error)
 
-	err := publisher.Publish("one", pchan)
+	err := exposer.Expose("one", pchan)
 	if nil != err {
 		panic(err)
 	}
@@ -346,10 +346,10 @@ func testPublisherBinderCloseRecv(t *testing.T, publisher Publisher, binder Bind
 
 	time.Sleep(100 * time.Millisecond)
 
-	publisher.Unpublish("one", pchan)
+	exposer.Unexpose("one", pchan)
 }
 
-func TestPublisherBinderCloseRecv(t *testing.T) {
+func TestExposerBinderCloseRecv(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -358,28 +358,28 @@ func TestPublisherBinderCloseRecv(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderCloseRecv(t, publisher, binder)
+	testExposerBinderCloseRecv(t, exposer, binder)
 }
 
-func testPublisherBinderInv(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderInv(t *testing.T, exposer Exposer, binder Binder) {
 	ichan := make(chan Message)
 	pchan := make(chan string)
 	cchan := make(chan int)
 	echan := make(chan error)
 
-	err := publisher.Publish(IdInv, ichan)
+	err := exposer.Expose(IdInv, ichan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish("one", pchan)
+	err = exposer.Expose("one", pchan)
 	if nil != err {
 		panic(err)
 	}
@@ -405,11 +405,11 @@ func testPublisherBinderInv(t *testing.T, publisher Publisher, binder Binder) {
 		t.Errorf("incorrect msg: expect invalid message, got %v", m)
 	}
 
-	publisher.Unpublish("one", pchan)
-	publisher.Unpublish(IdInv, pchan)
+	exposer.Unexpose("one", pchan)
+	exposer.Unexpose(IdInv, pchan)
 }
 
-func TestPublisherBinderInv(t *testing.T) {
+func TestExposerBinderInv(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -418,17 +418,17 @@ func TestPublisherBinderInv(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderInv(t, publisher, binder)
+	testExposerBinderInv(t, exposer, binder)
 }
 
-func testPublisherBinderMulti(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderMulti(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -436,7 +436,7 @@ func testPublisherBinderMulti(t *testing.T, publisher Publisher, binder Binder) 
 	for i := range pchan {
 		pchan[i] = make(chan string)
 
-		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
+		err := exposer.Expose("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
@@ -471,11 +471,11 @@ func testPublisherBinderMulti(t *testing.T, publisher Publisher, binder Binder) 
 	}
 
 	for i := range pchan {
-		publisher.Unpublish("chan"+strconv.Itoa(i), pchan[i])
+		exposer.Unexpose("chan"+strconv.Itoa(i), pchan[i])
 	}
 }
 
-func TestPublisherBinderMulti(t *testing.T) {
+func TestExposerBinderMulti(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -484,21 +484,21 @@ func TestPublisherBinderMulti(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderMulti(t, publisher, binder)
+	testExposerBinderMulti(t, exposer, binder)
 }
 
-func TestDefaultPublisherBinderMulti(t *testing.T) {
-	testPublisherBinderMulti(t, DefaultPublisher, DefaultBinder)
+func TestDefaultExposerBinderMulti(t *testing.T) {
+	testExposerBinderMulti(t, DefaultExposer, DefaultBinder)
 }
 
-func testPublisherBinderMultiConcurrent(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderMultiConcurrent(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -506,7 +506,7 @@ func testPublisherBinderMultiConcurrent(t *testing.T, publisher Publisher, binde
 	for i := range pchan {
 		pchan[i] = make(chan string)
 
-		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
+		err := exposer.Expose("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
@@ -558,11 +558,11 @@ func testPublisherBinderMultiConcurrent(t *testing.T, publisher Publisher, binde
 	}
 
 	for i := range pchan {
-		publisher.Unpublish("chan"+strconv.Itoa(i), pchan[i])
+		exposer.Unexpose("chan"+strconv.Itoa(i), pchan[i])
 	}
 }
 
-func TestPublisherBinderMultiConcurrent(t *testing.T) {
+func TestExposerBinderMultiConcurrent(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -571,26 +571,26 @@ func TestPublisherBinderMultiConcurrent(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderMultiConcurrent(t, publisher, binder)
+	testExposerBinderMultiConcurrent(t, exposer, binder)
 }
 
-func TestDefaultPublisherBinderMultiConcurrent(t *testing.T) {
-	testPublisherBinderMultiConcurrent(t, DefaultPublisher, DefaultBinder)
+func TestDefaultExposerBinderMultiConcurrent(t *testing.T) {
+	testExposerBinderMultiConcurrent(t, DefaultExposer, DefaultBinder)
 }
 
-func testPublisherBinderRoundtrip(t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderRoundtrip(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make(chan chan string)
 	cchan := make(chan chan string)
 	echan := make(chan error)
 
-	err := publisher.Publish("one", pchan)
+	err := exposer.Expose("one", pchan)
 	if nil != err {
 		panic(err)
 	}
@@ -622,10 +622,10 @@ func testPublisherBinderRoundtrip(t *testing.T, publisher Publisher, binder Bind
 		t.Errorf("incorrect msg: expect %v, got %v", "fortytwo", s)
 	}
 
-	publisher.Unpublish("one", pchan)
+	exposer.Unexpose("one", pchan)
 }
 
-func TestPublisherBinderRoundtrip(t *testing.T) {
+func TestExposerBinderRoundtrip(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -634,22 +634,22 @@ func TestPublisherBinderRoundtrip(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderRoundtrip(t, publisher, binder)
+	testExposerBinderRoundtrip(t, exposer, binder)
 }
 
-func TestDefaultPublisherBinderRoundtrip(t *testing.T) {
-	testPublisherBinderRoundtrip(t, DefaultPublisher, DefaultBinder)
+func TestDefaultExposerBinderRoundtrip(t *testing.T) {
+	testExposerBinderRoundtrip(t, DefaultExposer, DefaultBinder)
 }
 
-func testPublisherBinderMultiConcurrentRoundtrip(
-	t *testing.T, publisher Publisher, binder Binder) {
+func testExposerBinderMultiConcurrentRoundtrip(
+	t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make([]chan chan string, 100)
 	cchan := make([]chan chan string, 100)
 	echan := make(chan error)
@@ -657,7 +657,7 @@ func testPublisherBinderMultiConcurrentRoundtrip(
 	for i := range pchan {
 		pchan[i] = make(chan chan string)
 
-		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
+		err := exposer.Expose("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
@@ -713,11 +713,11 @@ func testPublisherBinderMultiConcurrentRoundtrip(
 	}
 
 	for i := range pchan {
-		publisher.Unpublish("chan"+strconv.Itoa(i), pchan[i])
+		exposer.Unexpose("chan"+strconv.Itoa(i), pchan[i])
 	}
 }
 
-func TestPublisherBinderMultiConcurrentRoundtrip(t *testing.T) {
+func TestExposerBinderMultiConcurrentRoundtrip(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -726,16 +726,16 @@ func TestPublisherBinderMultiConcurrentRoundtrip(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisherBinderMultiConcurrentRoundtrip(t, publisher, binder)
+	testExposerBinderMultiConcurrentRoundtrip(t, exposer, binder)
 }
 
-func TestDefaultPublisherBinderMultiConcurrentRoundtrip(t *testing.T) {
-	testPublisherBinderMultiConcurrentRoundtrip(t, DefaultPublisher, DefaultBinder)
+func TestDefaultExposerBinderMultiConcurrentRoundtrip(t *testing.T) {
+	testExposerBinderMultiConcurrentRoundtrip(t, DefaultExposer, DefaultBinder)
 }

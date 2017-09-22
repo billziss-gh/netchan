@@ -128,7 +128,7 @@ func main() {
 		netchan.NewWsTransport(marshaler, uri, http.DefaultServeMux, nil))
 
 	login := make(chan loginMsg, 64)
-	err := netchan.Publish("login", login)
+	err := netchan.Expose("login", login)
 	if nil == err {
 		go run(login)
 		err = http.ListenAndServe(":"+uri.Port(), nil)

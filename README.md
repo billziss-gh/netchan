@@ -9,28 +9,28 @@ channel of the same type on a different machine. This includes messages
 that contain channels (i.e. it is possible to "marshal" channels using
 this package).
 
-There are two fundamental concepts in netchan: "publishing" and
-"binding". A channel that is published, becomes associated with a
+There are two fundamental concepts in netchan: "exposing" and
+"binding". A channel that is exposed, becomes associated with a
 public name ("ID") and available to receive messages. A channel on a
-different machine may then be bound to the published channel.
+different machine may then be bound to the exposed channel.
 Messages sent to the bound channel will be transported over a
 network transport and will become available to be received by the
-published channel. Effectively the two channels become the endpoints of
+exposed channel. Effectively the two channels become the endpoints of
 a unidirectional network link.
 
-## Publishing a channel
+## Exposing a channel
 
-In order to publish a channel under an ID the Publish() function must be
-used; there is also an Unpublish() function to unpublish a channel. If
-multiple channels are published under the same ID which channel(s)
+In order to expose a channel under an ID the Expose() function must be
+used; there is also an Unexpose() function to unexpose a channel. If
+multiple channels are exposed under the same ID which channel(s)
 receive a message depends on the ID. ID's that start with a '+'
 character are considered "broadcast" ID's and messages sent to them are
-delivered to all channels published under that ID. All other ID's are
+delivered to all channels exposed under that ID. All other ID's are
 considered "unicast" and messages sent to them are delivered to a single
-channel published under that ID (determined using a pseudo-random
+channel exposed under that ID (determined using a pseudo-random
 algorithm).
 
-To receive publish errors one can publish error channels (of type chan
+To receive exposer errors one can expose error channels (of type chan
 error) under the special broadcast ID "+err/". All such error channels
 will receive transport errors, etc. [The special broadcast ID "+err/" is
 local to the running process and cannot be remoted.]
@@ -59,16 +59,16 @@ channels to be encoded/decoded (https://github.com/billziss-gh/netgob)
 - netjson: extension of the standard json format that also allows for
 channels to be encoded/decoded (https://github.com/billziss-gh/netjson)
 
-Channels that are marshaled in this way are also implicitly published
+Channels that are marshaled in this way are also implicitly exposed
 and bound. When a message that is being sent contains a channel, a
 reference is computed for that channel and the channel is implicitly
-published under that reference. When the message arrives at the target
+exposed under that reference. When the message arrives at the target
 machine the reference gets decoded and a new channel is constructed and
 implicitly bound back to the marshaled channel.
 
 It is now possible to use the implicitly bound channel to send
-messages back to the marshaled and implicitly published channel.
-Implicitly published channels that are no longer in use will be
+messages back to the marshaled and implicitly exposed channel.
+Implicitly exposed channels that are no longer in use will be
 eventually garbage collected. Implicitly bound channels must be
 closed when they will no longer be used for communication.
 
@@ -133,16 +133,16 @@ func ping(wg *sync.WaitGroup, count int) {
 	close(pingch)
 }
 
-func pong(wg *sync.WaitGroup, published chan struct{}) {
+func pong(wg *sync.WaitGroup, exposed chan struct{}) {
 	defer wg.Done()
 
 	pingch := make(chan chan struct{})
-	err := netchan.Publish("pingpong", pingch)
+	err := netchan.Expose("pingpong", pingch)
 	if nil != err {
 		panic(err)
 	}
 
-	close(published)
+	close(exposed)
 
 	for {
 		// receive the pong (response) channel
@@ -158,16 +158,16 @@ func pong(wg *sync.WaitGroup, published chan struct{}) {
 		pongch <- struct{}{}
 	}
 
-	netchan.Unpublish("pingpong", pingch)
+	netchan.Unexpose("pingpong", pingch)
 }
 
 func main() {
 	wg := &sync.WaitGroup{}
 
-	published := make(chan struct{})
+	exposed := make(chan struct{})
 	wg.Add(1)
-	go pong(wg, published)
-	<-published
+	go pong(wg, exposed)
+	<-exposed
 
 	wg.Add(1)
 	go ping(wg, 10)

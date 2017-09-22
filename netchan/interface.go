@@ -16,28 +16,28 @@
 // that contain channels (i.e. it is possible to "marshal" channels using
 // this package).
 //
-// There are two fundamental concepts in netchan: "publishing" and
-// "binding". A channel that is published, becomes associated with a
+// There are two fundamental concepts in netchan: "exposing" and
+// "binding". A channel that is exposed, becomes associated with a
 // public name ("ID") and available to receive messages. A channel on a
-// different machine may then be bound to the published channel.
+// different machine may then be bound to the exposed channel.
 // Messages sent to the bound channel will be transported over a
 // network transport and will become available to be received by the
-// published channel. Effectively the two channels become the endpoints of
+// exposed channel. Effectively the two channels become the endpoints of
 // a unidirectional network link.
 //
-// Publishing a channel
+// Exposing a channel
 //
-// In order to publish a channel under an ID the Publish() function must be
-// used; there is also an Unpublish() function to unpublish a channel. If
-// multiple channels are published under the same ID which channel(s)
+// In order to expose a channel under an ID the Expose() function must be
+// used; there is also an Unexpose() function to unexpose a channel. If
+// multiple channels are exposed under the same ID which channel(s)
 // receive a message depends on the ID. ID's that start with a '+'
 // character are considered "broadcast" ID's and messages sent to them are
-// delivered to all channels published under that ID. All other ID's are
+// delivered to all channels exposed under that ID. All other ID's are
 // considered "unicast" and messages sent to them are delivered to a single
-// channel published under that ID (determined using a pseudo-random
+// channel exposed under that ID (determined using a pseudo-random
 // algorithm).
 //
-// To receive publish errors one can publish error channels (of type chan
+// To receive exposer errors one can expose error channels (of type chan
 // error) under the special broadcast ID "+err/". All such error channels
 // will receive transport errors, etc.
 //
@@ -67,16 +67,16 @@
 //              channels to be encoded/decoded
 //              (https://github.com/billziss-gh/netjson)
 //
-// Channels that are marshaled in this way are also implicitly published
+// Channels that are marshaled in this way are also implicitly exposed
 // and bound. When a message that is being sent contains a channel, a
 // reference is computed for that channel and the channel is implicitly
-// published under that reference. When the message arrives at the target
+// exposed under that reference. When the message arrives at the target
 // machine the reference gets decoded and a new channel is constructed and
 // implicitly bound back to the marshaled channel.
 //
 // It is now possible to use the implicitly bound channel to send
-// messages back to the marshaled and implicitly published channel.
-// Implicitly published channels that are no longer in use will be
+// messages back to the marshaled and implicitly exposed channel.
+// Implicitly exposed channels that are no longer in use will be
 // eventually garbage collected. Implicitly bound channels must be
 // closed when they will no longer be used for communication.
 //
@@ -100,38 +100,38 @@ import (
 	"reflect"
 )
 
-// Publisher is used to publish and unpublish channels.
-type Publisher interface {
-	// Publish publishes a channel under an ID. Publishing a channel
+// Exposer is used to expose and unexpose channels.
+type Exposer interface {
+	// Expose exposes a channel under an ID. Exposing a channel
 	// associates it with the ID and makes it available to receive
 	// messages.
 	//
-	// If multiple channels are published under the same ID which
+	// If multiple channels are exposed under the same ID which
 	// channel(s) receive a message depends on the ID. ID's that start
 	// with a '+' character are considered "broadcast" ID's and messages
-	// sent to them are delivered to all channels published under that
+	// sent to them are delivered to all channels exposed under that
 	// ID. All other ID's are considered "unicast" and messages sent to
-	// them are delivered to a single channel published under that ID
+	// them are delivered to a single channel exposed under that ID
 	// (determined using a pseudo-random algorithm).
 	//
-	// To receive publisher errors one can publish error channels (of type
+	// To receive exposer errors one can expose error channels (of type
 	// chan error) under the special broadcast ID "+err/". All such error
 	// channels will receive transport errors, etc. This special broadcast
 	// ID is local to the running process and cannot be accessed remotely.
 	//
 	// It is also possible to receive "invalid" messages on channels (of
-	// type chan Message) published under the special broadcast ID
+	// type chan Message) exposed under the special broadcast ID
 	// "+inv/". Invalid messages are messages that cannot be delivered
 	// for any of a number of reasons: because they contain the wrong
 	// message ID, because their payload is the wrong type, because the
 	// destination channels have been closed, etc. As with "+err/" this
 	// special broadcast ID is local to the running process and cannot
 	// be accessed remotely.
-	Publish(id string, ichan interface{}) error
+	Expose(id string, ichan interface{}) error
 
-	// Unpublish unpublishes a channel. It disassociates it from the ID
+	// Unexpose unexposes a channel. It disassociates it from the ID
 	// and makes it unavailable to receive messages under that ID.
-	Unpublish(id string, ichan interface{})
+	Unexpose(id string, ichan interface{})
 }
 
 // Binder is used to bind a local channel to a remote channel.
@@ -140,7 +140,7 @@ type Binder interface {
 	// channel. After the binding is established, the bound channel may
 	// be used to send messages to the remote channel.
 	//
-	// Remotely published channels are addressed by URI's. The URI
+	// Remotely exposed channels are addressed by URI's. The URI
 	// syntax depends on the underlying transport. For the default TCP
 	// transport an address has the syntax: tcp://HOST[:PORT]/ID
 	//
@@ -161,8 +161,8 @@ type Binder interface {
 // Stats is a collection of values accessible by name; these values
 // typically represent a count or ratio.
 //
-// Publishers and binders implement Stats to provide insights
-// into their internal workings.
+// Exposers and binders implement Stats to provide insights into
+// their internal workings.
 type Stats interface {
 	// StatNames returns a list of value names.
 	StatNames() []string

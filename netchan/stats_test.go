@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-func testStats(t *testing.T, publisher Publisher, binder Binder) {
+func testStats(t *testing.T, exposer Exposer, binder Binder) {
 	pchan := make([]chan string, 100)
 	cchan := make([]chan string, 100)
 	echan := make(chan error)
@@ -28,7 +28,7 @@ func testStats(t *testing.T, publisher Publisher, binder Binder) {
 	for i := range pchan {
 		pchan[i] = make(chan string)
 
-		err := publisher.Publish("chan"+strconv.Itoa(i), pchan[i])
+		err := exposer.Expose("chan"+strconv.Itoa(i), pchan[i])
 		if nil != err {
 			panic(err)
 		}
@@ -80,10 +80,10 @@ func testStats(t *testing.T, publisher Publisher, binder Binder) {
 	}
 
 	for i := range pchan {
-		publisher.Unpublish("chan"+strconv.Itoa(i), pchan[i])
+		exposer.Unexpose("chan"+strconv.Itoa(i), pchan[i])
 	}
 
-	pubstats := publisher.(Stats)
+	pubstats := exposer.(Stats)
 	for _, name := range pubstats.StatNames() {
 		switch name {
 		case "Recv":
@@ -121,12 +121,12 @@ func TestStats(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testStats(t, publisher, binder)
+	testStats(t, exposer, binder)
 }

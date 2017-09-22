@@ -70,17 +70,17 @@ func MakeErrArgument(args ...interface{}) *ErrArgument {
 	return err
 }
 
-// ErrPublisher encapsulates a publisher error.
-// ErrPublisher implements the Err interface.
-type ErrPublisher struct {
+// ErrExposer encapsulates an exposer error.
+// ErrExposer implements the Err interface.
+type ErrExposer struct {
 	errData
 }
 
-// MakeErrPublisher makes a publisher error.
-func MakeErrPublisher(args ...interface{}) *ErrPublisher {
-	err := &ErrPublisher{}
+// MakeErrExposer makes an exposer error.
+func MakeErrExposer(args ...interface{}) *ErrExposer {
+	err := &ErrExposer{}
 	n := err._args(args)
-	if e, ok := n.(*ErrPublisher); ok {
+	if e, ok := n.(*ErrExposer); ok {
 		return e
 	}
 	return err

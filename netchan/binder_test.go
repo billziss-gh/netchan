@@ -73,7 +73,7 @@ func TestBinder(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	NewPublisher(transport)
+	NewExposer(transport)
 	binder := NewBinder(transport)
 	defer func() {
 		transport.Close()

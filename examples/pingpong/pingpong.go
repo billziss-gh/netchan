@@ -48,7 +48,7 @@ func ping(uri string, count int) {
 func pong(id string, count int) {
 	chch := make(chan chan struct{})
 
-	err := netchan.Publish(id, chch)
+	err := netchan.Expose(id, chch)
 	if nil != err {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func pong(id string, count int) {
 		close(ch)
 	}
 
-	netchan.Unpublish(id, chch)
+	netchan.Unexpose(id, chch)
 
 	time.Sleep(100 * time.Millisecond)
 
@@ -91,7 +91,7 @@ func iping(uri string, count int) {
 func ipong(id string, count int) {
 	chch := make(chan interface{})
 
-	err := netchan.Publish(id, chch)
+	err := netchan.Expose(id, chch)
 	if nil != err {
 		panic(err)
 	}
@@ -100,7 +100,7 @@ func ipong(id string, count int) {
 		ch := (<-chch).(chan interface{})
 		fmt.Println("ipong")
 		if 0 == i {
-			netchan.Unpublish(id, chch)
+			netchan.Unexpose(id, chch)
 		}
 		chch = make(chan interface{})
 		ch <- chch

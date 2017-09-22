@@ -52,16 +52,16 @@ func ping(wg *sync.WaitGroup, count int) {
 	close(pingch)
 }
 
-func pong(wg *sync.WaitGroup, published chan struct{}) {
+func pong(wg *sync.WaitGroup, exposed chan struct{}) {
 	defer wg.Done()
 
 	pingch := make(chan chan struct{})
-	err := Publish("pingpong", pingch)
+	err := Expose("pingpong", pingch)
 	if nil != err {
 		panic(err)
 	}
 
-	close(published)
+	close(exposed)
 
 	for {
 		// receive the pong (response) channel
@@ -77,16 +77,16 @@ func pong(wg *sync.WaitGroup, published chan struct{}) {
 		pongch <- struct{}{}
 	}
 
-	Unpublish("pingpong", pingch)
+	Unexpose("pingpong", pingch)
 }
 
 func Example() {
 	wg := &sync.WaitGroup{}
 
-	published := make(chan struct{})
+	exposed := make(chan struct{})
 	wg.Add(1)
-	go pong(wg, published)
-	<-published
+	go pong(wg, exposed)
+	<-exposed
 
 	wg.Add(1)
 	go ping(wg, 10)

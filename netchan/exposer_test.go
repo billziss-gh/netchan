@@ -1,5 +1,5 @@
 /*
- * publisher_test.go
+ * exposer_test.go
  *
  * Copyright 2017 Bill Zissimopoulos
  */
@@ -18,29 +18,29 @@ import (
 	"time"
 )
 
-func testPublisher(t *testing.T, publisher Publisher) {
+func testExposer(t *testing.T, exposer Exposer) {
 	ichan := make(chan bool)
 
-	err := publisher.Publish("one", ichan)
+	err := exposer.Expose("one", ichan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish("one", ichan)
+	err = exposer.Expose("one", ichan)
 	if nil != err {
 		panic(err)
 	}
 
-	err = publisher.Publish("two", ichan)
+	err = exposer.Expose("two", ichan)
 	if nil != err {
 		panic(err)
 	}
 
-	publisher.Unpublish("one", ichan)
-	publisher.Unpublish("two", ichan)
+	exposer.Unexpose("one", ichan)
+	exposer.Unexpose("two", ichan)
 }
 
-func TestPublisher(t *testing.T) {
+func TestExposer(t *testing.T) {
 	marshaler := NewGobMarshaler()
 	transport := NewNetTransport(
 		marshaler,
@@ -49,23 +49,23 @@ func TestPublisher(t *testing.T) {
 			Host:   ":25000",
 		},
 		nil)
-	publisher := NewPublisher(transport)
+	exposer := NewExposer(transport)
 	NewBinder(transport)
 	defer func() {
 		transport.Close()
 		time.Sleep(100 * time.Millisecond)
 	}()
 
-	testPublisher(t, publisher)
+	testExposer(t, exposer)
 }
 
-func TestDefaultPublisher(t *testing.T) {
-	testPublisher(t, DefaultPublisher)
+func TestDefaultExposer(t *testing.T) {
+	testExposer(t, DefaultExposer)
 }
 
-func TestDefaultPublisherHideImpl(t *testing.T) {
-	_, okR := DefaultPublisher.(Recver)
-	_, okC := DefaultPublisher.(ChanEncoder)
+func TestDefaultExposerHideImpl(t *testing.T) {
+	_, okR := DefaultExposer.(Recver)
+	_, okC := DefaultExposer.(ChanEncoder)
 
 	if okR {
 		t.Errorf("DefaultPulisher SHOULD NOT implement TransportRecver")

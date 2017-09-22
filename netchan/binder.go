@@ -287,7 +287,7 @@ var DefaultBinder Binder = NewBinder(DefaultTransport)
 // channel. After the binding is established, the bound channel may
 // be used to send messages to the remote channel.
 //
-// Remotely published channels are addressed by URI's. The URI
+// Remotely exposed channels are addressed by URI's. The URI
 // syntax depends on the underlying transport. For the default TCP
 // transport an address has the syntax: tcp://HOST[:PORT]/ID
 //
