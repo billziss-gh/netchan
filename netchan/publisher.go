@@ -44,6 +44,8 @@ type publisher struct {
 	statRecv, statRecvInv, statRecvErr uint32
 }
 
+type publisherImpl publisher
+
 // NewPublisher creates a new Publisher that can be used to publish
 // channels. It is usually sufficient to use the DefaultPublisher instead.
 func NewPublisher(transport Transport) Publisher {
@@ -52,7 +54,7 @@ func NewPublisher(transport Transport) Publisher {
 		pubmap:    make(map[string]pubinfo),
 		wchanmap:  newWeakmap(),
 	}
-	transport.SetRecver(self)
+	transport.SetRecver((*publisherImpl)(self))
 	return self
 }
 
@@ -123,7 +125,8 @@ func (self *publisher) Unpublish(id string, ichan interface{}) {
 	}
 }
 
-func (self *publisher) Recver(link Link) error {
+func (impl *publisherImpl) Recver(link Link) error {
+	self := (*publisher)(impl)
 	pubrnd := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	for {
@@ -186,13 +189,14 @@ func (self *publisher) deliver(id string, vmsg reflect.Value, pubrnd *rand.Rand)
 	return
 }
 
-func (self *publisher) ChanEncode(link Link,
+func (impl *publisherImpl) ChanEncode(link Link,
 	vchan reflect.Value, accum map[string]reflect.Value) ([]byte, error) {
+	self := (*publisher)(impl)
 	w := self.wchanmap.weakref(vchan.Interface())
 	return w[:], nil
 }
 
-func (self *publisher) ChanEncodeAccum(link Link,
+func (impl *publisherImpl) ChanEncodeAccum(link Link,
 	accum map[string]reflect.Value) error {
 	return nil
 }

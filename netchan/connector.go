@@ -44,6 +44,8 @@ type connector struct {
 	statSend, statSendErr uint32
 }
 
+type connectorImpl connector
+
 // NewConnector creates a new Connector that can be used to connect
 // channels. It is usually sufficient to use the DefaultConnector instead.
 func NewConnector(transport Transport) Connector {
@@ -52,7 +54,7 @@ func NewConnector(transport Transport) Connector {
 		conmap:    make(map[Link]coninfo),
 		lnkmap:    make(map[interface{}]Link),
 	}
-	transport.SetSender(self)
+	transport.SetSender((*connectorImpl)(self))
 	return self
 }
 
@@ -165,7 +167,8 @@ func (self *connector) disconnect(link Link, vchan reflect.Value) {
 	}
 }
 
-func (self *connector) Sender(link Link) error {
+func (impl *connectorImpl) Sender(link Link) error {
+	self := (*connector)(impl)
 	sigchan := link.Sigchan()
 	vsigsel := reflect.SelectCase{
 		Dir:  reflect.SelectRecv,
@@ -227,7 +230,7 @@ outer:
 	}
 }
 
-func (self *connector) ChanDecode(link Link,
+func (impl *connectorImpl) ChanDecode(link Link,
 	vchan reflect.Value, buf []byte, accum map[string]reflect.Value) error {
 	vchan = vchan.Elem()
 
@@ -251,8 +254,9 @@ func (self *connector) ChanDecode(link Link,
 	return nil
 }
 
-func (self *connector) ChanDecodeAccum(link Link,
+func (impl *connectorImpl) ChanDecodeAccum(link Link,
 	accum map[string]reflect.Value) error {
+	self := (*connector)(impl)
 	for id, c := range accum {
 		self.connect(id, link, c, nil)
 	}

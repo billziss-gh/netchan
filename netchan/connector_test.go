@@ -86,3 +86,16 @@ func TestConnector(t *testing.T) {
 func TestDefaultConnector(t *testing.T) {
 	testConnector(t, DefaultConnector)
 }
+
+func TestDefaultConnectorHideImpl(t *testing.T) {
+	_, okR := DefaultConnector.(TransportSender)
+	_, okC := DefaultConnector.(ChanDecoder)
+
+	if okR {
+		t.Errorf("DefaultConnector SHOULD NOT implement TransportSender")
+	}
+
+	if okC {
+		t.Errorf("DefaultConnector SHOULD NOT implement ChanDecoder")
+	}
+}

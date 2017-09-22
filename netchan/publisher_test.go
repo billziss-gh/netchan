@@ -62,3 +62,16 @@ func TestPublisher(t *testing.T) {
 func TestDefaultPublisher(t *testing.T) {
 	testPublisher(t, DefaultPublisher)
 }
+
+func TestDefaultPublisherHideImpl(t *testing.T) {
+	_, okR := DefaultPublisher.(TransportRecver)
+	_, okC := DefaultPublisher.(ChanEncoder)
+
+	if okR {
+		t.Errorf("DefaultPulisher SHOULD NOT implement TransportRecver")
+	}
+
+	if okC {
+		t.Errorf("DefaultPulisher SHOULD NOT implement ChanEncoder")
+	}
+}
