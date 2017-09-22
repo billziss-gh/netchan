@@ -74,7 +74,7 @@ func (self *gobMarshaler) Marshal(
 		return
 	}
 
-	if nil != self.chanEnc {
+	if 0 < len(accum) {
 		err = self.chanEnc.ChanEncodeAccum(link, accum)
 		if nil != err {
 			err = MakeErrMarshaler(err)
@@ -120,7 +120,7 @@ func (self *gobMarshaler) Unmarshal(
 		return
 	}
 
-	if nil != self.chanDec {
+	if 0 < len(accum) {
 		err = self.chanDec.ChanDecodeAccum(link, accum)
 		if nil != err {
 			id = ""
